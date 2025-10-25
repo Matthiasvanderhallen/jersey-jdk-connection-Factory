@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2025 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -17,8 +17,7 @@
 package org.glassfish.jersey.server.internal.process;
 
 import java.io.Closeable;
-import java.util.Collections;
-import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -35,29 +34,52 @@ import org.glassfish.jersey.server.internal.LocalizationMessages;
  *
  * @author Marek Potociar
  */
-class DefaultCloseableService implements CloseableService {
+class DefaultCloseableService
+    implements CloseableService {
 
     private static final Logger LOGGER = Logger.getLogger(DefaultCloseableService.class.getName());
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private final Set<Closeable> closeables = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<Wrapper<Closeable>> closeables = new LinkedHashSet<Wrapper<Closeable>>();
 
     @Override
     public boolean add(final Closeable closeable) {
-        return !closed.get() && closeables.add(closeable);
+        return !closed.get() && closeables.add(new Wrapper<>(closeable));
     }
 
     @Override
     public void close() {
         if (closed.compareAndSet(false, true)) {
-            for (final Closeable closeable : closeables) {
+            for (final Wrapper<Closeable> closeable : closeables) {
                 try {
-                    closeable.close();
+                    closeable.wrapped.close();
                 } catch (Exception ex) {
                     LOGGER.log(Level.WARNING,
                             LocalizationMessages.CLOSEABLE_UNABLE_TO_CLOSE(closeable.getClass().getName()), ex);
                 }
             }
+        }
+    }
+
+    private static class Wrapper<T> {
+        private final T wrapped;
+
+        private Wrapper(T wrapped) {
+            this.wrapped = wrapped;
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (obj instanceof Wrapper<?>) {
+                return ((Wrapper<?>) obj).wrapped == this.wrapped;
+            }
+
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(wrapped);
         }
     }
 }
