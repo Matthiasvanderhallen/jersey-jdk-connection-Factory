@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.Produces;
@@ -41,6 +42,7 @@ import javax.json.bind.JsonbException;
 import org.glassfish.jersey.jsonb.LocalizationMessages;
 import org.glassfish.jersey.message.internal.AbstractMessageReaderWriterProvider;
 import org.glassfish.jersey.message.internal.EntityInputStream;
+import org.glassfish.jersey.message.internal.ReaderWriter;
 
 /**
  * Entity provider (reader and writer) for JSONB.
@@ -55,8 +57,9 @@ public class JsonBindingProvider extends AbstractMessageReaderWriterProvider<Obj
     private static final String JSON = "json";
     private static final String PLUS_JSON = "+json";
 
-    private Providers providers;
+    private final Providers providers;
 
+    @Inject
     public JsonBindingProvider(@Context Providers providers) {
         this.providers = providers;
     }
@@ -100,7 +103,7 @@ public class JsonBindingProvider extends AbstractMessageReaderWriterProvider<Obj
                         OutputStream entityStream) throws IOException, WebApplicationException {
         Jsonb jsonb = getJsonb(type);
         try {
-            entityStream.write(jsonb.toJson(o).getBytes(AbstractMessageReaderWriterProvider.getCharset(mediaType)));
+            entityStream.write(jsonb.toJson(o).getBytes(ReaderWriter.getCharset(mediaType)));
             entityStream.flush();
         } catch (IOException e) {
             throw new ProcessingException(LocalizationMessages.ERROR_JSONB_SERIALIZATION(), e);

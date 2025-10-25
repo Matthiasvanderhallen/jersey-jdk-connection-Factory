@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -17,10 +17,12 @@
 package org.glassfish.jersey;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
 import java.security.AccessController;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -30,6 +32,7 @@ import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -240,6 +243,9 @@ public final class SslConfigurator {
     private String trustStoreFile;
     private String keyStoreFile;
 
+    private URL trustStoreUrl;
+    private URL keyStoreUrl;
+
     private byte[] trustStoreBytes;
     private byte[] keyStoreBytes;
 
@@ -320,6 +326,8 @@ public final class SslConfigurator {
         this.keyPass = that.keyPass;
         this.trustStoreFile = that.trustStoreFile;
         this.keyStoreFile = that.keyStoreFile;
+        this.keyStoreUrl = that.keyStoreUrl;
+        this.trustStoreUrl = that.trustStoreUrl;
         this.trustStoreBytes = that.trustStoreBytes;
         this.keyStoreBytes = that.keyStoreBytes;
         this.trustManagerFactoryAlgorithm = that.trustManagerFactoryAlgorithm;
@@ -440,8 +448,9 @@ public final class SslConfigurator {
     /**
      * Set the <em>trust</em> store file name.
      * <p>
-     * Setting a trust store instance resets any {@link #trustStore(java.security.KeyStore) trust store instance}
-     * or {@link #trustStoreBytes(byte[]) trust store payload} value previously set.
+     * Setting a trust store instance resets any {@link #trustStore(java.security.KeyStore) trust store instance},
+     * {@link #trustStoreBytes(byte[]) trust store payload} or {@link #trustStoreUrl(URL) trust store url}
+     * value previously set.
      * </p>
      *
      * @param fileName {@link java.io.File file} name of the <em>trust</em> store.
@@ -450,6 +459,26 @@ public final class SslConfigurator {
     public SslConfigurator trustStoreFile(String fileName) {
         this.trustStoreFile = fileName;
         this.trustStoreBytes = null;
+        this.trustStoreUrl = null;
+        this.trustStore = null;
+        return this;
+    }
+
+    /**
+     * Set the <em>trust</em> store file url.
+     * <p>
+     * Setting a trust store instance resets any {@link #trustStore(java.security.KeyStore) trust store instance},
+     * {@link #trustStoreBytes(byte[]) trust store payload} or {@link #trustStoreUrl(URL) trust store url}
+     * value previously set.
+     * </p>
+     *
+     * @param url {@link java.net.URL url} link of the <em>trust</em> store.
+     * @return updated SSL configurator instance.
+     */
+    public SslConfigurator trustStoreUrl(URL url) {
+        this.trustStoreFile = null;
+        this.trustStoreBytes = null;
+        this.trustStoreUrl = url;
         this.trustStore = null;
         return this;
     }
@@ -457,8 +486,9 @@ public final class SslConfigurator {
     /**
      * Set the <em>trust</em> store payload as byte array.
      * <p>
-     * Setting a trust store instance resets any {@link #trustStoreFile(String) trust store file}
-     * or {@link #trustStore(java.security.KeyStore) trust store instance} value previously set.
+     * Setting a trust store instance resets any {@link #trustStoreFile(String) trust store file},
+     * {@link #trustStore(java.security.KeyStore) trust store instance} or {@link #trustStoreUrl(URL) trust store url}
+     * value previously set.
      * </p>
      *
      * @param payload <em>trust</em> store payload.
@@ -467,6 +497,7 @@ public final class SslConfigurator {
     public SslConfigurator trustStoreBytes(byte[] payload) {
         this.trustStoreBytes = payload.clone();
         this.trustStoreFile = null;
+        this.trustStoreUrl = null;
         this.trustStore = null;
         return this;
     }
@@ -474,8 +505,8 @@ public final class SslConfigurator {
     /**
      * Set the <em>key</em> store file name.
      * <p>
-     * Setting a key store instance resets any {@link #keyStore(java.security.KeyStore) key store instance}
-     * or {@link #keyStoreBytes(byte[]) key store payload} value previously set.
+     * Setting a key store instance resets any {@link #keyStore(java.security.KeyStore) key store instance},
+     * {@link #keyStoreBytes(byte[]) key store payload} or {@link #keyStoreUrl(URL) key store url} value previously set.
      * </p>
      *
      * @param fileName {@link java.io.File file} name of the <em>key</em> store.
@@ -483,6 +514,26 @@ public final class SslConfigurator {
      */
     public SslConfigurator keyStoreFile(String fileName) {
         this.keyStoreFile = fileName;
+        this.keyStoreUrl = null;
+        this.keyStoreBytes = null;
+        this.keyStore = null;
+        return this;
+    }
+
+    /**
+     * Set the <em>key</em> store url.
+     * <p>
+     * Setting a key store instance resets any {@link #keyStore(java.security.KeyStore) key store instance},
+     * {@link #keyStoreBytes(byte[]) key store payload} or {@link #keyStoreFile(String) key store file}
+     * value previously set.
+     * </p>
+     *
+     * @param url {@link java.net.URL url} of the <em>key</em> store.
+     * @return updated SSL configurator instance.
+     */
+    public SslConfigurator keyStoreUrl(URL url) {
+        this.keyStoreFile = null;
+        this.keyStoreUrl = url;
         this.keyStoreBytes = null;
         this.keyStore = null;
         return this;
@@ -491,8 +542,9 @@ public final class SslConfigurator {
     /**
      * Set the <em>key</em> store payload as byte array.
      * <p>
-     * Setting a key store instance resets any {@link #keyStoreFile(String) key store file}
-     * or {@link #keyStore(java.security.KeyStore) key store instance} value previously set.
+     * Setting a key store instance resets any {@link #keyStoreFile(String) key store file},
+     * {@link #keyStore(java.security.KeyStore) key store instance} or {@link #keyStoreUrl(URL) key store url}
+     * value previously set.
      * </p>
      *
      * @param payload <em>key</em> store payload.
@@ -500,6 +552,7 @@ public final class SslConfigurator {
      */
     public SslConfigurator keyStoreBytes(byte[] payload) {
         this.keyStoreBytes = payload.clone();
+        this.keyStoreUrl = null;
         this.keyStoreFile = null;
         this.keyStore = null;
         return this;
@@ -572,8 +625,8 @@ public final class SslConfigurator {
     /**
      * Set the <em>key</em> store instance.
      * <p>
-     * Setting a key store instance resets any {@link #keyStoreFile(String) key store file}
-     * or {@link #keyStoreBytes(byte[]) key store payload} value previously set.
+     * Setting a key store instance resets any {@link #keyStoreFile(String) key store file},
+     * {@link #keyStoreBytes(byte[]) key store payload} or {@link #keyStoreUrl(URL) key store url} value previously set.
      * </p>
      *
      * @param keyStore <em>key</em> store instance.
@@ -583,15 +636,12 @@ public final class SslConfigurator {
         this.keyStore = keyStore;
         this.keyStoreFile = null;
         this.keyStoreBytes = null;
+        this.keyStoreUrl = null;
         return this;
     }
 
     /**
      * Get the <em>trust</em> store instance.
-     * <p>
-     * Setting a trust store instance resets any {@link #trustStoreFile(String) trust store file}
-     * or {@link #trustStoreBytes(byte[]) trust store payload} value previously set.
-     * </p>
      *
      * @return <em>trust</em> store instance or {@code null} if not explicitly set.
      */
@@ -601,12 +651,16 @@ public final class SslConfigurator {
 
     /**
      * Set the <em>trust</em> store instance.
-     *
+     * <p>
+     * Setting a trust store instance resets any {@link #trustStoreFile(String) trust store file},
+     * {@link #trustStoreBytes(byte[]) trust store payload} or {@link #trustStoreUrl(URL) trust store url} value previously set.
+     * </p>
      * @param trustStore <em>trust</em> store instance.
      * @return updated SSL configurator instance.
      */
     public SslConfigurator trustStore(KeyStore trustStore) {
         this.trustStore = trustStore;
+        this.trustStoreUrl = null;
         this.trustStoreFile = null;
         this.trustStoreBytes = null;
         return this;
@@ -622,7 +676,7 @@ public final class SslConfigurator {
         KeyManagerFactory keyManagerFactory = null;
 
         KeyStore _keyStore = keyStore;
-        if (_keyStore == null && (keyStoreBytes != null || keyStoreFile != null)) {
+        if (_keyStore == null && (keyStoreBytes != null || keyStoreFile != null || keyStoreUrl != null)) {
             try {
                 if (keyStoreProvider != null) {
                     _keyStore = KeyStore.getInstance(
@@ -634,8 +688,10 @@ public final class SslConfigurator {
                 try {
                     if (keyStoreBytes != null) {
                         keyStoreInputStream = new ByteArrayInputStream(keyStoreBytes);
+                    } else if (keyStoreUrl != null) {
+                      keyStoreInputStream = keyStoreUrl.openStream();
                     } else if (!keyStoreFile.equals("NONE")) {
-                        keyStoreInputStream = new FileInputStream(keyStoreFile);
+                        keyStoreInputStream = Files.newInputStream(new File(keyStoreFile).toPath());
                     }
                     _keyStore.load(keyStoreInputStream, keyStorePass);
                 } finally {
@@ -696,7 +752,7 @@ public final class SslConfigurator {
         }
 
         KeyStore _trustStore = trustStore;
-        if (_trustStore == null && (trustStoreBytes != null || trustStoreFile != null)) {
+        if (_trustStore == null && (trustStoreBytes != null || trustStoreFile != null || trustStoreUrl != null)) {
             try {
                 if (trustStoreProvider != null) {
                     _trustStore = KeyStore.getInstance(
@@ -709,8 +765,10 @@ public final class SslConfigurator {
                 try {
                     if (trustStoreBytes != null) {
                         trustStoreInputStream = new ByteArrayInputStream(trustStoreBytes);
+                    } else if (trustStoreUrl != null) {
+                      trustStoreInputStream = trustStoreUrl.openStream();
                     } else if (!trustStoreFile.equals("NONE")) {
-                        trustStoreInputStream = new FileInputStream(trustStoreFile);
+                        trustStoreInputStream = Files.newInputStream(new File(trustStoreFile).toPath());
                     }
                     _trustStore.load(trustStoreInputStream, trustStorePass);
                 } finally {
@@ -807,6 +865,9 @@ public final class SslConfigurator {
         trustStoreFile = props.getProperty(TRUST_STORE_FILE);
         keyStoreFile = props.getProperty(KEY_STORE_FILE);
 
+        keyStoreUrl = null;
+        trustStoreUrl = null;
+
         trustStoreBytes = null;
         keyStoreBytes = null;
 
@@ -856,6 +917,9 @@ public final class SslConfigurator {
         trustStoreFile = AccessController.doPrivileged(PropertiesHelper.getSystemProperty(TRUST_STORE_FILE));
         keyStoreFile = AccessController.doPrivileged(PropertiesHelper.getSystemProperty(KEY_STORE_FILE));
 
+        trustStoreUrl = null;
+        keyStoreUrl = null;
+
         trustStoreBytes = null;
         keyStoreBytes = null;
 
@@ -875,91 +939,35 @@ public final class SslConfigurator {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-
         SslConfigurator that = (SslConfigurator) o;
-
-        if (keyManagerFactoryAlgorithm != null
-                ? !keyManagerFactoryAlgorithm.equals(that.keyManagerFactoryAlgorithm) : that.keyManagerFactoryAlgorithm != null) {
-            return false;
-        }
-        if (keyManagerFactoryProvider != null
-                ? !keyManagerFactoryProvider.equals(that.keyManagerFactoryProvider) : that.keyManagerFactoryProvider != null) {
-            return false;
-        }
-        if (!Arrays.equals(keyPass, that.keyPass)) {
-            return false;
-        }
-        if (keyStore != null ? !keyStore.equals(that.keyStore) : that.keyStore != null) {
-            return false;
-        }
-        if (!Arrays.equals(keyStoreBytes, that.keyStoreBytes)) {
-            return false;
-        }
-        if (keyStoreFile != null ? !keyStoreFile.equals(that.keyStoreFile) : that.keyStoreFile != null) {
-            return false;
-        }
-        if (!Arrays.equals(keyStorePass, that.keyStorePass)) {
-            return false;
-        }
-        if (keyStoreProvider != null ? !keyStoreProvider.equals(that.keyStoreProvider) : that.keyStoreProvider != null) {
-            return false;
-        }
-        if (keyStoreType != null ? !keyStoreType.equals(that.keyStoreType) : that.keyStoreType != null) {
-            return false;
-        }
-        if (securityProtocol != null ? !securityProtocol.equals(that.securityProtocol) : that.securityProtocol != null) {
-            return false;
-        }
-        if (trustManagerFactoryAlgorithm != null ? !trustManagerFactoryAlgorithm.equals(that.trustManagerFactoryAlgorithm)
-                : that.trustManagerFactoryAlgorithm != null) {
-            return false;
-        }
-        if (trustManagerFactoryProvider != null ? !trustManagerFactoryProvider.equals(that.trustManagerFactoryProvider)
-                : that.trustManagerFactoryProvider != null) {
-            return false;
-        }
-        if (trustStore != null ? !trustStore.equals(that.trustStore) : that.trustStore != null) {
-            return false;
-        }
-        if (!Arrays.equals(trustStoreBytes, that.trustStoreBytes)) {
-            return false;
-        }
-        if (trustStoreFile != null ? !trustStoreFile.equals(that.trustStoreFile) : that.trustStoreFile != null) {
-            return false;
-        }
-        if (!Arrays.equals(trustStorePass, that.trustStorePass)) {
-            return false;
-        }
-        if (trustStoreProvider != null ? !trustStoreProvider.equals(that.trustStoreProvider) : that.trustStoreProvider != null) {
-            return false;
-        }
-        if (trustStoreType != null ? !trustStoreType.equals(that.trustStoreType) : that.trustStoreType != null) {
-            return false;
-        }
-
-        return true;
+        return Objects.equals(keyStore, that.keyStore)
+                && Objects.equals(trustStore, that.trustStore)
+                && Objects.equals(trustStoreProvider, that.trustStoreProvider)
+                && Objects.equals(keyStoreProvider, that.keyStoreProvider)
+                && Objects.equals(trustStoreType, that.trustStoreType)
+                && Objects.equals(keyStoreType, that.keyStoreType)
+                && Arrays.equals(trustStorePass, that.trustStorePass)
+                && Arrays.equals(keyStorePass, that.keyStorePass)
+                && Arrays.equals(keyPass, that.keyPass)
+                && Objects.equals(trustStoreFile, that.trustStoreFile)
+                && Objects.equals(keyStoreFile, that.keyStoreFile)
+                && Objects.equals(trustStoreUrl, that.trustStoreUrl)
+                && Objects.equals(keyStoreUrl, that.keyStoreUrl)
+                && Arrays.equals(trustStoreBytes, that.trustStoreBytes)
+                && Arrays.equals(keyStoreBytes, that.keyStoreBytes)
+                && Objects.equals(trustManagerFactoryAlgorithm, that.trustManagerFactoryAlgorithm)
+                && Objects.equals(keyManagerFactoryAlgorithm, that.keyManagerFactoryAlgorithm)
+                && Objects.equals(trustManagerFactoryProvider, that.trustManagerFactoryProvider)
+                && Objects.equals(keyManagerFactoryProvider, that.keyManagerFactoryProvider)
+                && Objects.equals(securityProtocol, that.securityProtocol);
     }
 
     @Override
     public int hashCode() {
-        int result = keyStore != null ? keyStore.hashCode() : 0;
-        result = 31 * result + (trustStore != null ? trustStore.hashCode() : 0);
-        result = 31 * result + (trustStoreProvider != null ? trustStoreProvider.hashCode() : 0);
-        result = 31 * result + (keyStoreProvider != null ? keyStoreProvider.hashCode() : 0);
-        result = 31 * result + (trustStoreType != null ? trustStoreType.hashCode() : 0);
-        result = 31 * result + (keyStoreType != null ? keyStoreType.hashCode() : 0);
-        result = 31 * result + (trustStorePass != null ? Arrays.hashCode(trustStorePass) : 0);
-        result = 31 * result + (keyStorePass != null ? Arrays.hashCode(keyStorePass) : 0);
-        result = 31 * result + (keyPass != null ? Arrays.hashCode(keyPass) : 0);
-        result = 31 * result + (trustStoreFile != null ? trustStoreFile.hashCode() : 0);
-        result = 31 * result + (keyStoreFile != null ? keyStoreFile.hashCode() : 0);
-        result = 31 * result + (trustStoreBytes != null ? Arrays.hashCode(trustStoreBytes) : 0);
-        result = 31 * result + (keyStoreBytes != null ? Arrays.hashCode(keyStoreBytes) : 0);
-        result = 31 * result + (trustManagerFactoryAlgorithm != null ? trustManagerFactoryAlgorithm.hashCode() : 0);
-        result = 31 * result + (keyManagerFactoryAlgorithm != null ? keyManagerFactoryAlgorithm.hashCode() : 0);
-        result = 31 * result + (trustManagerFactoryProvider != null ? trustManagerFactoryProvider.hashCode() : 0);
-        result = 31 * result + (keyManagerFactoryProvider != null ? keyManagerFactoryProvider.hashCode() : 0);
-        result = 31 * result + (securityProtocol != null ? securityProtocol.hashCode() : 0);
+        int result = Objects.hash(keyStore, trustStore, trustStoreProvider, keyStoreProvider, trustStoreType, keyStoreType,
+                trustStoreFile, keyStoreFile, trustStoreUrl, keyStoreUrl, trustManagerFactoryAlgorithm,
+                keyManagerFactoryAlgorithm, trustManagerFactoryProvider, keyManagerFactoryProvider, securityProtocol,
+                trustStorePass, keyStorePass, keyPass, trustStoreBytes, keyStoreBytes);
         return result;
     }
 }

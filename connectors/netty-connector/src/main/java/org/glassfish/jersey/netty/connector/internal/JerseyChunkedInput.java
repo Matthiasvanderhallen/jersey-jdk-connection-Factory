@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2025 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -68,7 +68,8 @@ public class JerseyChunkedInput extends OutputStream implements ChunkedInput<Byt
         ByteBuffer peek = queue.peek();
 
         if ((peek != null && peek == VOID)) {
-            queue.remove(); // VOID from the top.
+            //required for JDK 11 and netty.version = 4.1.121.Final
+            queue.poll(); // VOID from the top.
             open = false;
             removeCloseListener();
             return true;
@@ -101,7 +102,15 @@ public class JerseyChunkedInput extends OutputStream implements ChunkedInput<Byt
 
     @Override
     public ByteBuf readChunk(ByteBufAllocator allocator) throws Exception {
+        try {
+            return readChunk0(allocator);
+        } catch (Exception e) {
+            closeOnThrowable();
+            throw e;
+        }
+    }
 
+    private ByteBuf readChunk0(ByteBufAllocator allocator) throws Exception {
         if (!open) {
             return null;
         }
@@ -141,6 +150,14 @@ public class JerseyChunkedInput extends OutputStream implements ChunkedInput<Byt
     @Override
     public long progress() {
         return offset;
+    }
+
+    private void closeOnThrowable() {
+        try {
+            close();
+        } catch (Throwable t) {
+            // do not throw other throwable
+        }
     }
 
     @Override
@@ -208,10 +225,12 @@ public class JerseyChunkedInput extends OutputStream implements ChunkedInput<Byt
         try {
             boolean queued = queue.offer(bufferSupplier.get(), WRITE_TIMEOUT, TimeUnit.MILLISECONDS);
             if (!queued) {
+                closeOnThrowable();
                 throw new IOException("Buffer overflow.");
             }
 
         } catch (InterruptedException e) {
+            closeOnThrowable();
             throw new IOException(e);
         }
     }

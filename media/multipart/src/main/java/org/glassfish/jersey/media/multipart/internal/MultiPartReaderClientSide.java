@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -28,6 +28,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.ConstrainedTo;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.RuntimeType;
@@ -36,6 +37,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Providers;
@@ -77,16 +79,17 @@ public class MultiPartReaderClientSide implements MessageBodyReader<MultiPart> {
      * Injectable helper to look up appropriate {@link MessageBodyReader}s
      * for our body parts.
      */
-    @Inject
     private Provider<MessageBodyWorkers> messageBodyWorkers;
-
     private final MIMEConfig mimeConfig;
+    private final int maxParts;
 
     /**
      * Accepts constructor injection of the configuration parameters for this
      * application.
      */
-    public MultiPartReaderClientSide(@Context final Providers providers) {
+    @Inject
+    public MultiPartReaderClientSide(@Context final Providers providers,
+                                     @Context final Provider<MessageBodyWorkers> messageBodyWorkers) {
         final ContextResolver<MultiPartProperties> contextResolver =
                 providers.getContextResolver(MultiPartProperties.class, MediaType.WILDCARD_TYPE);
 
@@ -98,6 +101,9 @@ public class MultiPartReaderClientSide implements MessageBodyReader<MultiPart> {
             properties = new MultiPartProperties();
         }
 
+        maxParts = properties.getMaxParts();
+
+        this.messageBodyWorkers = messageBodyWorkers;
         mimeConfig = createMimeConfig(properties);
     }
 
@@ -204,7 +210,12 @@ public class MultiPartReaderClientSide implements MessageBodyReader<MultiPart> {
             fileNameFix = userAgent != null && userAgent.contains(" MSIE ");
         }
 
-        for (final MIMEPart mimePart : getMimeParts(mimeMessage)) {
+        final List<MIMEPart> mimeParts = getMimeParts(mimeMessage);
+        if (mimeParts.size() > maxParts) {
+            throw new ClientErrorException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
+        }
+
+        for (final MIMEPart mimePart : mimeParts) {
             final BodyPart bodyPart = formData ? new FormDataBodyPart(fileNameFix) : new BodyPart();
 
             // Configure providers.

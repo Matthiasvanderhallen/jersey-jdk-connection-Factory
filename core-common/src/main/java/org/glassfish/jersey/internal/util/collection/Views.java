@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2025 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -24,12 +24,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static org.glassfish.jersey.internal.guava.Preconditions.checkNotNull;
 
 /**
  * Collections utils, which provide transforming views for {@link List} and {@link Map}.
@@ -130,60 +129,177 @@ public class Views {
      * @return transformed map view.
      */
     public static <K, V, O> Map<K, V> mapView(Map<K, O> originalMap, Function<O, V> valuesTransformer) {
-        return new AbstractMap<K, V>() {
-            @Override
-            public Set<Entry<K, V>> entrySet() {
-                return new AbstractSet<Entry<K, V>>() {
+        return new KVOMap<K, V, O>(originalMap, valuesTransformer);
+    }
 
+    private static class KVOMap<K, V, O> extends AbstractMap<K, V> {
+            protected final Map<K, O> originalMap;
+            protected final Function<O, V> valuesTransformer;
 
-                    Set<Entry<K, O>> originalSet = originalMap.entrySet();
-                    Iterator<Entry<K, O>> original = originalSet.iterator();
+        private KVOMap(Map<K, O> originalMap, Function<O, V> valuesTransformer) {
+            this.originalMap = originalMap;
+            this.valuesTransformer = valuesTransformer;
+        }
 
-                    @Override
-                    public Iterator<Entry<K, V>> iterator() {
-                        return new Iterator<Entry<K, V>>() {
-                            @Override
-                            public boolean hasNext() {
-                                return original.hasNext();
-                            }
+        @Override
+        public Set<Entry<K, V>> entrySet() {
+            return new AbstractSet<Entry<K, V>>() {
 
-                            @Override
-                            public Entry<K, V> next() {
+                Set<Entry<K, O>> originalSet = originalMap.entrySet();
+                Iterator<Entry<K, O>> original = originalSet.iterator();
 
-                                Entry<K, O> next = original.next();
+                @Override
+                public Iterator<Entry<K, V>> iterator() {
+                    return new Iterator<Entry<K, V>>() {
+                        @Override
+                        public boolean hasNext() {
+                            return original.hasNext();
+                        }
 
-                                return new Entry<K, V>() {
-                                    @Override
-                                    public K getKey() {
-                                        return next.getKey();
-                                    }
+                        @Override
+                        public Entry<K, V> next() {
 
-                                    @Override
-                                    public V getValue() {
-                                        return valuesTransformer.apply(next.getValue());
-                                    }
+                            Entry<K, O> next = original.next();
 
-                                    @Override
-                                    public V setValue(V value) {
-                                        throw new UnsupportedOperationException("Not supported.");
-                                    }
-                                };
-                            }
+                            return new Entry<K, V>() {
+                                @Override
+                                public K getKey() {
+                                    return next.getKey();
+                                }
 
-                            @Override
-                            public void remove() {
-                                original.remove();
-                            }
-                        };
+                                @Override
+                                public V getValue() {
+                                    return valuesTransformer.apply(next.getValue());
+                                }
+
+                                @Override
+                                public V setValue(V value) {
+                                    return KVOMap.this.setValue(next, value);
+                                }
+                            };
+                        }
+
+                        @Override
+                        public void remove() {
+                            original.remove();
+                        }
+                    };
+                }
+
+                @Override
+                public int size() {
+                    return originalSet.size();
+                }
+            };
+        }
+
+        protected V setValue(Map.Entry<K, O> entry, V value) {
+            throw new UnsupportedOperationException("Not supported.");
+        }
+    }
+
+    /**
+     * Create a {@link Map} view, which transforms the values of provided original map.
+     * <p>
+     *
+     * @param originalMap       provided map.
+     * @param valuesTransformer values transformer.
+     * @return transformed map view.
+     */
+    public static Map<String, List<String>> mapObjectToStringView(Map<String, List<Object>> originalMap,
+                                                            Function<List<Object>, List<String>> valuesTransformer) {
+        return new ObjectToStringMap(originalMap, valuesTransformer);
+    }
+
+    private static class ObjectToStringMap extends KVOMap<String, List<String>, List<Object>> {
+
+        private ObjectToStringMap(Map<String, List<Object>> originalMap, Function<List<Object>, List<String>> valuesTransformer) {
+            super(originalMap, valuesTransformer);
+        }
+
+        @Override
+        protected List<String> setValue(Entry<String, List<Object>> entry, List<String> value) {
+            @SuppressWarnings("unchecked")
+            final List<Object> old = entry.setValue((List<Object>) (List<?>) value);
+            return valuesTransformer.apply(old);
+        }
+
+        @Override
+        public List<String> put(String key, List<String> value) {
+            @SuppressWarnings("unchecked")
+            final List<Object> old = originalMap.put(key, (List<Object>) (List<?>) value);
+            return valuesTransformer.apply(old);
+        }
+
+        @Override
+        public boolean containsKey(Object key) {
+            Iterator<Entry<String, List<String>>> i = entrySet().iterator();
+            if (key == null) {
+                while (i.hasNext()) {
+                    Entry<String, List<String>> e = i.next();
+                    if (e.getKey() == null) {
+                        return true;
                     }
-
-                    @Override
-                    public int size() {
-                        return originalSet.size();
+                }
+            } else {
+                while (i.hasNext()) {
+                    Entry<String, List<String>> e = i.next();
+                    if (((String) key).equalsIgnoreCase(e.getKey())) {
+                        return true;
                     }
-                };
+                }
             }
-        };
+            return false;
+        }
+
+        @Override
+        public List<String> get(Object key) {
+            Iterator<Entry<String, List<String>>> i = entrySet().iterator();
+            if (key == null) {
+                while (i.hasNext()) {
+                    Entry<String, List<String>> e = i.next();
+                    if (e.getKey() == null) {
+                        return e.getValue();
+                    }
+                }
+            } else {
+                while (i.hasNext()) {
+                    Entry<String, List<String>> e = i.next();
+                    if (((String) key).equalsIgnoreCase(e.getKey())) {
+                        return e.getValue();
+                    }
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public List<String> remove(Object key) {
+            Iterator<Entry<String, List<String>>> i = entrySet().iterator();
+            Entry<String, List<String>> correctEntry = null;
+            if (key == null) {
+                while (correctEntry == null && i.hasNext()) {
+                    Entry<String, List<String>> e = i.next();
+                    if (e.getKey() == null) {
+                        correctEntry = e;
+                    }
+                }
+            } else {
+                while (correctEntry == null && i.hasNext()) {
+                    Entry<String, List<String>> e = i.next();
+                    if (((String) key).equalsIgnoreCase(e.getKey())) {
+                        correctEntry = e;
+                    }
+                }
+            }
+
+            List<String> oldValue = null;
+            if (correctEntry != null) {
+                oldValue = correctEntry.getValue();
+                i.remove();
+            }
+            return oldValue;
+        }
     }
 
     /**
@@ -197,8 +313,8 @@ public class Views {
      * @return union view of given sets.
      */
     public static <E> Set<E> setUnionView(final Set<? extends E> set1, final Set<? extends E> set2) {
-        checkNotNull(set1, "set1");
-        checkNotNull(set2, "set2");
+        Objects.requireNonNull(set1, "set1");
+        Objects.requireNonNull(set2, "set2");
 
         return new AbstractSet<E>() {
             @Override
@@ -220,18 +336,19 @@ public class Views {
     }
 
     /**
-     * Create a view of a difference of provided sets.
+     * Create a view of a difference of provided sets, i.e. the diff filters out from the first set the items included
+     * in the second set.
      * <p>
      * View is updated whenever any of the provided set changes.
      *
      * @param set1 first set.
      * @param set2 second set.
      * @param <E>  set item type.
-     * @return union view of given sets.
+     * @return view that is a difference of given sets.
      */
     public static <E> Set<E> setDiffView(final Set<? extends E> set1, final Set<? extends E> set2) {
-        checkNotNull(set1, "set1");
-        checkNotNull(set2, "set2");
+        Objects.requireNonNull(set1, "set1");
+        Objects.requireNonNull(set2, "set2");
 
         return new AbstractSet<E>() {
             @Override

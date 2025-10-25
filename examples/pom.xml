@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (c) 2011, 2022 Oracle and/or its affiliates. All rights reserved.
+    Copyright (c) 2011, 2025 Oracle and/or its affiliates. All rights reserved.
 
     This program and the accompanying materials are made available under the
     terms of the Eclipse Distribution License v. 1.0, which is available at
@@ -18,7 +18,7 @@
     <parent>
         <groupId>org.glassfish.jersey</groupId>
         <artifactId>project</artifactId>
-        <version>2.38-SNAPSHOT</version>
+        <version>2.48-SNAPSHOT</version>
     </parent>
 
     <licenses>
@@ -60,16 +60,17 @@
         <module>cdi-webapp</module>
         <module>clipboard</module>
         <module>clipboard-programmatic</module>
+        <module>configured-client</module>
         <module>declarative-linking</module>
         <module>entity-filtering</module>
         <module>entity-filtering-selectable</module>
         <module>entity-filtering-security</module>
         <module>extended-wadl-webapp</module>
         <module>exception-mapping</module>
+        <module>expect-100-continue-netty-client</module>
         <!--<module>feed-combiner-java8-webapp</module>-->
         <module>freemarker-webapp</module>
         <!--<module>flight-mgmt-webapp</module>-->
-        <module>groovy</module>
         <module>helloworld</module>
         <module>helloworld-benchmark</module>
         <module>helloworld-cdi2-se</module>
@@ -101,6 +102,7 @@
         <module>managed-client-simple-webapp</module>
         <!--<module>monitoring-webapp</module>-->
         <module>multipart-webapp</module>
+        <module>micrometer</module>
         <module>open-tracing</module>
         <module>osgi-helloworld-webapp</module>
         <module>osgi-http-service</module>
@@ -183,7 +185,7 @@
                 <plugin>
                     <groupId>org.commonjava.maven.plugins</groupId>
                     <artifactId>directory-maven-plugin</artifactId>
-                    <version>0.3.1</version>
+                    <version>1.0</version>
                     <executions>
                         <execution>
                             <id>directories</id>
@@ -200,7 +202,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>2.6</version>
+                    <version>${resources.mvn.plugin.version}</version>
                     <!-- Add legal information, NOTICE.md and LINCENSE.md to jars -->
                     <executions>
                         <execution>
@@ -279,5 +281,16 @@
             </resource>
         </resources>
     </build>
+    <profiles>
+        <profile>
+            <id>GROOVY-EXAMPLE</id>
+            <activation>
+                <jdk>[11,)</jdk>
+            </activation>
+            <modules>
+                <module>groovy</module>
+            </modules>
+        </profile>
+    </profiles>
 
 </project>

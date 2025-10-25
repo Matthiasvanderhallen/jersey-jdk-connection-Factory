@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -16,21 +16,17 @@
 
 package org.glassfish.jersey.client.spi;
 
-import org.glassfish.jersey.internal.PropertiesDelegate;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import javax.annotation.Priority;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.CacheControl;
-import javax.ws.rs.core.Configuration;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -48,7 +44,7 @@ public class InvocationBuilderListenerTest {
 
     private WebTarget target;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         target = ClientBuilder.newClient().target("http://localhost:8080").register(AbortRequestFilter.class)
                 .register(new PropertySetterInvocationBuilderListener(a -> a.property(key(ONE), ONE)));
@@ -80,7 +76,7 @@ public class InvocationBuilderListenerTest {
         String value = "OTHER_VALUE";
         try (Response r = target.property(key(ConfigurationInvocationBuilderListener.OTHER_PROPERTY), value)
                 .register(ConfigurationInvocationBuilderListener.class).request().get()) {
-            Assert.assertTrue(
+            Assertions.assertTrue(
                     r.readEntity(String.class).contains(key(ConfigurationInvocationBuilderListener.OTHER_PROPERTY) + "=" + value)
             );
         }
@@ -94,8 +90,22 @@ public class InvocationBuilderListenerTest {
         }
     }
 
+    @Test
+    public void testCounter() {
+        CountingInvocationBuilderListener listener = new CountingInvocationBuilderListener();
+        target = target.register(listener);
+        try (Response r = target.request().get()) {
+            assertDefault(r);
+            Assertions.assertEquals(1, listener.getCount());
+        }
+        try (Response r = target.request().get()) {
+            assertDefault(r);
+            Assertions.assertEquals(2, listener.getCount());
+        }
+    }
+
     private void assertDefault(Response response) {
-        Assert.assertEquals(key(ONE) + "=" + ONE, response.readEntity(String.class));
+        Assertions.assertEquals(key(ONE) + "=" + ONE, response.readEntity(String.class));
     }
 
     private static String key(String keySuffix) {
@@ -161,10 +171,10 @@ public class InvocationBuilderListenerTest {
         public void onNewBuilder(InvocationBuilderContext context) {
             Date date = new Date();
             RuntimeDelegate.HeaderDelegate localeDelegate = RuntimeDelegate.getInstance().createHeaderDelegate(Locale.class);
-            Assert.assertThat(context.getAccepted(),
+            MatcherAssert.assertThat(context.getAccepted(),
                     Matchers.containsInAnyOrder(MediaType.APPLICATION_JSON, MediaType.APPLICATION_JSON_PATCH_JSON));
-            Assert.assertThat(context.getEncodings(), Matchers.contains("GZIP"));
-            Assert.assertThat(context.getAcceptedLanguages(),
+            MatcherAssert.assertThat(context.getEncodings(), Matchers.contains("GZIP"));
+            MatcherAssert.assertThat(context.getAcceptedLanguages(),
                     Matchers.containsInAnyOrder(localeDelegate.toString(Locale.GERMAN),
                             localeDelegate.toString(
                                     new Locale.Builder().setLanguage("sr").setScript("Latn").setRegion("RS").build()
@@ -172,24 +182,37 @@ public class InvocationBuilderListenerTest {
                     )
             );
 
-            Assert.assertThat(context.getHeader(HttpHeaders.CONTENT_ID), Matchers.contains(PROPERTY_NAME));
+            MatcherAssert.assertThat(context.getHeader(HttpHeaders.CONTENT_ID), Matchers.contains(PROPERTY_NAME));
             context.getHeaders().add(HttpHeaders.DATE, date);
-            Assert.assertThat(context.getHeader(HttpHeaders.DATE), Matchers.notNullValue());
-            Assert.assertThat(context.getHeaders().getFirst(HttpHeaders.DATE), Matchers.is(date));
+            MatcherAssert.assertThat(context.getHeader(HttpHeaders.DATE), Matchers.notNullValue());
+            MatcherAssert.assertThat(context.getHeaders().getFirst(HttpHeaders.DATE), Matchers.is(date));
 
-            Assert.assertNotNull(context.getUri());
-            Assert.assertTrue(context.getUri().toASCIIString().startsWith("http://"));
+            Assertions.assertNotNull(context.getUri());
+            Assertions.assertTrue(context.getUri().toASCIIString().startsWith("http://"));
 
-            Assert.assertThat(context.getPropertyNames(), Matchers.contains(PROPERTY_NAME));
-            Assert.assertThat(context.getProperty(PROPERTY_NAME), Matchers.is(PROPERTY_NAME));
+            MatcherAssert.assertThat(context.getPropertyNames(), Matchers.contains(PROPERTY_NAME));
+            MatcherAssert.assertThat(context.getProperty(PROPERTY_NAME), Matchers.is(PROPERTY_NAME));
             context.removeProperty(PROPERTY_NAME);
-            Assert.assertTrue(context.getPropertyNames().isEmpty());
+            Assertions.assertTrue(context.getPropertyNames().isEmpty());
 
-            Assert.assertThat(context.getCacheControls().get(0).toString(),
+            MatcherAssert.assertThat(context.getCacheControls().get(0).toString(),
                     Matchers.is(CacheControl.valueOf(PROPERTY_NAME).toString())
             );
-            Assert.assertThat(context.getCookies().size(), Matchers.is(1));
-            Assert.assertThat(context.getCookies().get("Cookie"), Matchers.notNullValue());
+            MatcherAssert.assertThat(context.getCookies().size(), Matchers.is(1));
+            MatcherAssert.assertThat(context.getCookies().get("Cookie"), Matchers.notNullValue());
+        }
+    }
+
+    private static class CountingInvocationBuilderListener implements InvocationBuilderListener {
+        private int counter = 0;
+
+        @Override
+        public void onNewBuilder(InvocationBuilderContext context) {
+            counter++;
+        }
+
+        public int getCount() {
+            return counter;
         }
     }
 }

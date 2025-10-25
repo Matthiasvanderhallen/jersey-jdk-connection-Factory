@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2025 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -17,6 +17,8 @@
 package org.glassfish.jersey.servlet;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.security.AccessController;
@@ -36,6 +38,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import javax.servlet.ServletInputStream;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.GenericType;
@@ -54,6 +57,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.glassfish.jersey.innate.io.InputStreamWrapper;
 import org.glassfish.jersey.internal.ServiceFinderBinder;
 import org.glassfish.jersey.internal.inject.AbstractBinder;
 import org.glassfish.jersey.internal.inject.InjectionManager;
@@ -401,8 +405,7 @@ public class WebComponent {
 
             if (configSetStatusOverSendError) {
                 servletResponse.reset();
-                //noinspection deprecation
-                servletResponse.setStatus(status.getStatusCode(), status.getReasonPhrase());
+                ServletContainer.setStatus(servletResponse, status.getStatusCode(), status.getReasonPhrase());
             } else {
                 servletResponse.sendError(status.getStatusCode(), status.getReasonPhrase());
             }
@@ -413,7 +416,7 @@ public class WebComponent {
     }
 
     /**
-     * Initialize {@code ContainerRequest} instance to used used to handle {@code servletRequest}.
+     * Initialize {@code ContainerRequest} instance to used to handle {@code servletRequest}.
      */
     private void initContainerRequest(
             final ContainerRequest requestContext,
@@ -421,7 +424,26 @@ public class WebComponent {
             final HttpServletResponse servletResponse,
             final ResponseWriter responseWriter) throws IOException {
 
-        requestContext.setEntityStream(servletRequest.getInputStream());
+        try {
+            requestContext.setEntityStream(new InputStreamWrapper() {
+
+                private ServletInputStream wrappedStream;
+                @Override
+                protected InputStream getWrapped() {
+                    if (wrappedStream == null) {
+                        try {
+                            wrappedStream = servletRequest.getInputStream();
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    }
+                    return wrappedStream;
+                }
+            });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
+
         requestContext.setRequestScopedInitializer(requestScopedInitializer.get(new RequestContextProvider() {
             @Override
             public HttpServletRequest getHttpServletRequest() {
@@ -603,7 +625,11 @@ public class WebComponent {
                 final String name = (String) parameterNames.nextElement();
                 final List<String> values = Arrays.asList(servletRequest.getParameterValues(name));
 
-                formMap.put(name, keepQueryParams ? values : filterQueryParams(name, values, queryParams));
+                final List<String> filteredValues = keepQueryParams ? values : filterQueryParams(name, values, queryParams);
+
+                if (!filteredValues.isEmpty()) {
+                    formMap.put(name, filteredValues);
+                }
             }
 
             if (!formMap.isEmpty()) {

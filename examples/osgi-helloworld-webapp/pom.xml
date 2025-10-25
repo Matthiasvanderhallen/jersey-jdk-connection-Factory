@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (c) 2010, 2022 Oracle and/or its affiliates. All rights reserved.
+    Copyright (c) 2010, 2025 Oracle and/or its affiliates. All rights reserved.
 
     This program and the accompanying materials are made available under the
     terms of the Eclipse Distribution License v. 1.0, which is available at
@@ -18,22 +18,27 @@
     <parent>
         <groupId>org.glassfish.jersey.examples</groupId>
         <artifactId>project</artifactId>
-        <version>2.38-SNAPSHOT</version>
+        <version>2.48-SNAPSHOT</version>
     </parent>
 
     <artifactId>osgi-helloworld-webapp</artifactId>
     <name>jersey-examples-osgi-helloworld-webapp</name>
     <packaging>pom</packaging>
 
-    <modules>
-        <module>war-bundle</module>
-        <module>functional-test</module>
-        <module>lib-bundle</module>
-        <module>additional-bundle</module>
-        <module>alternate-version-bundle</module>
-    </modules>
-
     <profiles>
+        <profile>
+            <id>securityOn</id>
+            <activation>
+                <jdk>[1.8,24)</jdk>
+            </activation>
+            <modules>
+                <module>war-bundle</module>
+                <module>functional-test</module>
+                <module>lib-bundle</module>
+                <module>additional-bundle</module>
+                <module>alternate-version-bundle</module>
+            </modules>
+        </profile>
         <profile>
             <id>pre-release</id>
             <build>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (c) 2020, 2022 Oracle and/or its affiliates. All rights reserved.
+    Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
 
     This program and the accompanying materials are made available under the
     terms of the Eclipse Public License v. 2.0, which is available at
@@ -22,7 +22,7 @@
     <parent>
         <artifactId>project</artifactId>
         <groupId>org.glassfish.jersey.tests.integration</groupId>
-        <version>2.38-SNAPSHOT</version>
+        <version>2.48-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -55,8 +55,26 @@
         </dependency>
     </dependencies>
 
-    <properties>
-        <surefire.security.argline>-Djava.security.manager -Djava.security.policy=${project.build.directory}/test-classes/surefire.policy</surefire.security.argline>
-    </properties>
-
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <forkMode>none</forkMode>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <profiles>
+        <profile>
+            <id>jdk_8_11</id>
+            <activation>
+                <jdk>[1.8, 12)</jdk>
+            </activation>
+            <properties>
+                <surefire.mvn.plugin.version>3.0.0-M7</surefire.mvn.plugin.version> <!-- Legacy version for older JDKs -->
+                <surefire.security.argline>-Djava.security.manager -Djava.security.policy=${project.build.directory}/test-classes/surefire.policy</surefire.security.argline>
+            </properties>
+        </profile>
+    </profiles>
 </project>

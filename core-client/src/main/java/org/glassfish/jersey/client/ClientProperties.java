@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2022 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2025 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -23,6 +23,9 @@ import org.glassfish.jersey.client.internal.HttpUrlConnector;
 import org.glassfish.jersey.internal.util.PropertiesClass;
 import org.glassfish.jersey.internal.util.PropertiesHelper;
 import org.glassfish.jersey.internal.util.PropertyAlias;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
 
 /**
  * Jersey client implementation configuration properties.
@@ -152,6 +155,15 @@ public final class ClientProperties {
     public static final String BACKGROUND_SCHEDULER_THREADPOOL_SIZE = "jersey.config.client.backgroundScheduler.threadPoolSize";
 
     /**
+     * The connector configuration object available through connector provider configuration methods.
+     *
+     * <p>
+     *  The name of the configuration property is <tt>{@value}</tt>.
+     * </p>
+     */
+    public static final String CONNECTOR_CONFIGURATION = "jersey.config.client.ConnectorConfiguration";
+
+    /**
      * If {@link org.glassfish.jersey.client.filter.EncodingFilter} is
      * registered, this property indicates the value of Content-Encoding
      * property the filter should be adding.
@@ -238,10 +250,33 @@ public final class ClientProperties {
     public static final String OUTBOUND_CONTENT_LENGTH_BUFFER = CommonProperties.OUTBOUND_CONTENT_LENGTH_BUFFER_CLIENT;
 
     /**
+     * If {@code true} then disable configuration of Json Binding (JSR-367)
+     * feature on client.
+     * <p>
+     * By default, Json Binding on client is automatically enabled if global
+     * property
+     * {@value org.glassfish.jersey.CommonProperties#JSON_BINDING_FEATURE_DISABLE}
+     * is not disabled. If set then the client property value overrides the
+     * global property value.
+     * <p>
+     * The default value is {@code false}.
+     * </p>
+     * <p>
+     * The name of the configuration property is <tt>{@value}</tt>.
+     * </p>
+     * <p>This constant is an alias for {@link CommonProperties#JSON_BINDING_FEATURE_DISABLE_CLIENT}.</p>
+     *
+     * @see org.glassfish.jersey.CommonProperties#JSON_BINDING_FEATURE_DISABLE
+     * @since 2.45
+     */
+    @PropertyAlias
+    public static final String JSON_BINDING_FEATURE_DISABLE = CommonProperties.JSON_BINDING_FEATURE_DISABLE_CLIENT;
+
+    /**
      * If {@code true} then disable configuration of Json Processing (JSR-353)
      * feature on client.
      * <p>
-     * By default Json Processing on client is automatically enabled if global
+     * By default, Json Processing on client is automatically enabled if global
      * property
      * {@value org.glassfish.jersey.CommonProperties#JSON_PROCESSING_FEATURE_DISABLE}
      * is not disabled. If set then the client property value overrides the
@@ -262,7 +297,7 @@ public final class ClientProperties {
     /**
      * If {@code true} then disable META-INF/services lookup on client.
      * <p>
-     * By default Jersey looks up SPI implementations described by {@code META-INF/services/*} files.
+     * By default,  Jersey looks up SPI implementations described by {@code META-INF/services/*} files.
      * Then you can register appropriate provider  classes by {@link javax.ws.rs.core.Application}.
      * </p>
      * <p>
@@ -444,7 +479,7 @@ public final class ClientProperties {
             EXPECT_100_CONTINUE_THRESHOLD_SIZE = "jersey.config.client.request.expect.100.continue.threshold.size";
 
     /**
-     * Default threshold size (64kb) after which which Expect:100-Continue header would be applied before
+     * Default threshold size (64kb) after which Expect:100-Continue header would be applied before
      * the main request.
      *
      * @since 2.32
@@ -462,6 +497,46 @@ public final class ClientProperties {
      * </p>
      */
     public static final String QUERY_PARAM_STYLE = "jersey.config.client.uri.query.param.style";
+
+    /**
+     * Sets the {@link org.glassfish.jersey.client.spi.ConnectorProvider} class. Overrides the value from META-INF/services.
+     *
+     * <p>
+     *     The value MUST be an instance of {@code String}.
+     * </p>
+     * <p>
+     *     The property is recognized by {@link ClientBuilder}.
+     * </p>
+     * <p>
+     *     The name of the configuration property is <tt>{@value}</tt>.
+     * </p>
+     * @since 2.40
+     */
+    public static final String CONNECTOR_PROVIDER = "jersey.config.client.connector.provider";
+
+    /**
+     * <p>
+     *     Sets the {@code hostName} to be used for calculating the {@link javax.net.ssl.SNIHostName} during the HTTPS request.
+     *     Takes precedence over the HTTP HOST header, if set.
+     * </p>
+     * <p>
+     *     By default, the {@code SNIHostName} is set when the HOST HTTP header differs from the HTTP request host.
+     *     When the {@code hostName} matches the HTTPS request host, the {@code SNIHostName} is not set,
+     *     and the HTTP HOST header is not used for setting the {@code SNIHostName}. This allows for Domain Fronting.
+     * </p>
+     * @since 2.43
+     */
+    public static final String SNI_HOST_NAME = "jersey.config.client.sniHostName";
+
+    /**
+     * <p>The {@link javax.net.ssl.SSLContext} {@link java.util.function.Supplier} to be used to set ssl context in the current
+     * HTTP request. Has precedence over the {@link Client#getSslContext()}.
+     * </p>
+     * <p>Currently supported by the default {@code HttpUrlConnector} and by {@code NettyConnector} only.</p>
+     * @since 2.41
+     * @see org.glassfish.jersey.client.SslContextClientBuilder
+     */
+    public static final String SSL_CONTEXT_SUPPLIER = "jersey.config.client.ssl.context.supplier";
 
     private ClientProperties() {
         // prevents instantiation

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2022 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -21,9 +21,13 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.net.URI;
 import java.util.Date;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Set;
 
@@ -308,6 +312,18 @@ public class ContainerResponse implements ContainerResponseContext {
             if (parameterizedType.getRawType().equals(GenericEntity.class)) {
                 t = parameterizedType.getActualTypeArguments()[0];
             }
+        } else if (type instanceof TypeVariable) {
+           final TypeVariable typeVariable = (TypeVariable) type;
+           final Type[] bounds = typeVariable.getBounds();
+           if (bounds.length == 1) {
+               t = bounds[0];
+           }
+        } else if (type instanceof WildcardType) {
+            final WildcardType wildcardType = (WildcardType) type;
+            final Type[] bounds = wildcardType.getUpperBounds();
+            if (bounds.length == 1) {
+                t = bounds[0];
+            }
         }
 
         messageContext.setEntityType(t);
@@ -386,9 +402,14 @@ public class ContainerResponse implements ContainerResponseContext {
     public void close() {
         if (!closed) {
             closed = true;
-            messageContext.close();
-            requestContext.getResponseWriter().commit();
-            requestContext.setWorkers(null);
+            try {
+                messageContext.close();
+                requestContext.setWorkers(null);
+                requestContext.getResponseWriter().commit();
+            } catch (Exception e) {
+                Logger.getLogger(ContainerResponse.class.getName()).log(Level.FINE, e.getMessage(), e);
+                requestContext.getResponseWriter().failure(e);
+            }
         }
     }
 

@@ -26,6 +26,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 // THE POSSIBILITY OF SUCH DAMAGE.
 package jersey.repackaged.org.objectweb.asm;
+
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -214,7 +215,7 @@ final class Constants {
     }
     if (minorVersion != 0xFFFF) {
       throw new IllegalStateException(
-          "ASM9_EXPERIMENTAL can only be used by classes compiled with --enable-preview");
+          "ASM10_EXPERIMENTAL can only be used by classes compiled with --enable-preview");
     }
   }
 }

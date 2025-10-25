@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -24,6 +24,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -31,12 +32,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import javax.net.ssl.SSLSocket;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Configuration;
@@ -48,6 +52,7 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 
+import org.apache.hc.client5.http.AuthenticationStrategy;
 import org.apache.hc.client5.http.ConnectionKeepAliveStrategy;
 import org.apache.hc.client5.http.HttpRequestRetryStrategy;
 import org.apache.hc.client5.http.auth.AuthCache;
@@ -65,6 +70,7 @@ import org.apache.hc.client5.http.cookie.StandardCookieSpec;
 import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.auth.BasicScheme;
+import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
@@ -86,6 +92,7 @@ import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.impl.DefaultContentLengthStrategy;
 import org.apache.hc.core5.http.io.entity.AbstractHttpEntity;
 import org.apache.hc.core5.http.io.entity.BufferedHttpEntity;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TextUtils;
 import org.apache.hc.core5.util.Timeout;
@@ -95,8 +102,10 @@ import org.glassfish.jersey.client.ClientRequest;
 import org.glassfish.jersey.client.ClientResponse;
 import org.glassfish.jersey.client.RequestEntityProcessing;
 import org.glassfish.jersey.client.innate.ClientProxy;
+import org.glassfish.jersey.client.innate.http.SSLParamConfigurator;
 import org.glassfish.jersey.client.spi.AsyncConnectorCallback;
 import org.glassfish.jersey.client.spi.Connector;
+import org.glassfish.jersey.innate.io.InputStreamWrapper;
 import org.glassfish.jersey.internal.util.PropertiesHelper;
 import org.glassfish.jersey.message.internal.HeaderUtils;
 import org.glassfish.jersey.message.internal.OutboundMessageContext;
@@ -176,6 +185,7 @@ import org.glassfish.jersey.message.internal.Statuses;
 class Apache5Connector implements Connector {
 
     private static final Logger LOGGER = Logger.getLogger(Apache5Connector.class.getName());
+    private static final String JERSEY_REQUEST_ATTR_NAME = "JerseyRequestAttribute";
     private static final VersionInfo vi;
     private static final String release;
 
@@ -251,10 +261,17 @@ class Apache5Connector implements Connector {
             }
         }
 
+        final boolean useSystemProperties =
+                PropertiesHelper.isProperty(config.getProperties(), Apache5ClientProperties.USE_SYSTEM_PROPERTIES);
+
         final SSLContext sslContext = client.getSslContext();
         final HttpClientBuilder clientBuilder = HttpClientBuilder.create();
 
-        clientBuilder.setConnectionManager(getConnectionManager(client, config, sslContext));
+        if (useSystemProperties) {
+            clientBuilder.useSystemProperties();
+        }
+
+        clientBuilder.setConnectionManager(getConnectionManager(client, config, sslContext, useSystemProperties));
         clientBuilder.setConnectionManagerShared(
                 PropertiesHelper.getValue(
                         config.getProperties(),
@@ -341,7 +358,8 @@ class Apache5Connector implements Connector {
 
     private HttpClientConnectionManager getConnectionManager(final Client client,
                                                              final Configuration config,
-                                                             final SSLContext sslContext) {
+                                                             final SSLContext sslContext,
+                                                             final boolean useSystemProperties) {
         final Object cmObject = config.getProperties().get(Apache5ClientProperties.CONNECTION_MANAGER);
 
         // Connection manager from configuration.
@@ -358,9 +376,6 @@ class Apache5Connector implements Connector {
                 );
             }
         }
-
-        final boolean useSystemProperties =
-            PropertiesHelper.isProperty(config.getProperties(), Apache5ClientProperties.USE_SYSTEM_PROPERTIES);
 
         // Create custom connection manager.
         return createConnectionManager(
@@ -385,15 +400,15 @@ class Apache5Connector implements Connector {
 
         final LayeredConnectionSocketFactory sslSocketFactory;
         if (sslContext != null) {
-            sslSocketFactory = new SSLConnectionSocketFactory(
+            sslSocketFactory = new SniSSLConnectionSocketFactory(
                     sslContext, supportedProtocols, supportedCipherSuites, hostnameVerifier);
         } else {
             if (useSystemProperties) {
-                sslSocketFactory = new SSLConnectionSocketFactory(
+                sslSocketFactory = new SniSSLConnectionSocketFactory(
                         (SSLSocketFactory) SSLSocketFactory.getDefault(),
                         supportedProtocols, supportedCipherSuites, hostnameVerifier);
             } else {
-                sslSocketFactory = new SSLConnectionSocketFactory(
+                sslSocketFactory = new SniSSLConnectionSocketFactory(
                         SSLContexts.createDefault(),
                         hostnameVerifier);
             }
@@ -458,12 +473,7 @@ class Apache5Connector implements Connector {
         try {
             final CloseableHttpResponse response;
             final HttpClientContext context = HttpClientContext.create();
-            if (preemptiveBasicAuth) {
-                final AuthCache authCache = new BasicAuthCache();
-                final BasicScheme basicScheme = new BasicScheme();
-                authCache.put(getHost(request), basicScheme);
-                context.setAuthCache(authCache);
-            }
+            final HttpHost httpHost = getHost(request);
 
             // If a request-specific CredentialsProvider exists, use it instead of the default one
             CredentialsProvider credentialsProvider =
@@ -472,7 +482,18 @@ class Apache5Connector implements Connector {
                 context.setCredentialsProvider(credentialsProvider);
             }
 
-            response = client.execute(getHost(request), request, context);
+            if (preemptiveBasicAuth) {
+                final AuthCache authCache = new BasicAuthCache();
+                final BasicScheme basicScheme = new BasicScheme();
+                final AuthScope authScope = new AuthScope(httpHost);
+                basicScheme.initPreemptive(credentialsProvider.getCredentials(authScope, context));
+                context.resetAuthExchange(httpHost, basicScheme);
+                authCache.put(httpHost, basicScheme); // must be after initPreemptive
+                context.setAuthCache(authCache);
+            }
+
+            context.setAttribute(JERSEY_REQUEST_ATTR_NAME, clientRequest);
+            response = client.execute(httpHost, request, context);
             HeaderUtils.checkHeaderChanges(clientHeadersSnapshot, clientRequest.getHeaders(),
                     this.getClass().getName(), clientRequest.getConfiguration());
 
@@ -501,7 +522,7 @@ class Apache5Connector implements Connector {
             final HttpEntity entity = response.getEntity();
 
             if (entity != null) {
-                if (headers.get(HttpHeaders.CONTENT_LENGTH) == null) {
+                if (headers.get(HttpHeaders.CONTENT_LENGTH) == null && entity.getContentLength() >= 0) {
                     headers.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(entity.getContentLength()));
                 }
 
@@ -513,7 +534,7 @@ class Apache5Connector implements Connector {
 
             try {
                 final ConnectionClosingMechanism closingMechanism = new ConnectionClosingMechanism(clientRequest, request);
-                responseContext.setEntityStream(getInputStream(response, closingMechanism));
+                responseContext.setEntityStream(getInputStream(response, closingMechanism, () -> clientRequest.isCancelled()));
             } catch (final IOException e) {
                 LOGGER.log(Level.SEVERE, null, e);
             }
@@ -723,13 +744,14 @@ class Apache5Connector implements Connector {
     }
 
     private static InputStream getInputStream(final CloseableHttpResponse response,
-                                              final ConnectionClosingMechanism closingMechanism) throws IOException {
+                                              final ConnectionClosingMechanism closingMechanism,
+                                              final Supplier<Boolean> isCancelled) throws IOException {
         final InputStream inputStream;
 
         if (response.getEntity() == null) {
             inputStream = new ByteArrayInputStream(new byte[0]);
         } else {
-            final InputStream i = response.getEntity().getContent();
+            final InputStream i = new CancellableInputStream(response.getEntity().getContent(), isCancelled);
             if (i.markSupported()) {
                 inputStream = i;
             } else {
@@ -798,4 +820,102 @@ class Apache5Connector implements Connector {
             );
         }
     }
+
+    private static final class SniSSLConnectionSocketFactory extends SSLConnectionSocketFactory {
+
+        private final ThreadLocal<HttpContext> httpContexts = new ThreadLocal<>();
+
+        public SniSSLConnectionSocketFactory(final SSLContext sslContext,
+                                             final String[] supportedProtocols,
+                                             final String[] supportedCipherSuites,
+                                             final HostnameVerifier hostnameVerifier) {
+            super(sslContext, supportedProtocols, supportedCipherSuites, hostnameVerifier);
+        }
+
+        public SniSSLConnectionSocketFactory(final javax.net.ssl.SSLSocketFactory socketFactory,
+                                             final String[] supportedProtocols,
+                                             final String[] supportedCipherSuites,
+                                             final HostnameVerifier hostnameVerifier) {
+            super(socketFactory, supportedProtocols, supportedCipherSuites, hostnameVerifier);
+        }
+
+        public SniSSLConnectionSocketFactory(
+                final SSLContext sslContext, final HostnameVerifier hostnameVerifier) {
+            super(sslContext, hostnameVerifier);
+        }
+
+        /* Pre 5.2 */
+        @Override
+        public Socket createLayeredSocket(
+                final Socket socket,
+                final String target,
+                final int port,
+                final HttpContext context) throws IOException {
+            httpContexts.set(context);
+            try {
+                return super.createLayeredSocket(socket, target, port, context);
+            } finally {
+                httpContexts.remove();
+            }
+        }
+
+        /* Post 5.2 */
+        public Socket createLayeredSocket(
+                final Socket socket,
+                final String target,
+                final int port,
+                final Object attachment,
+                final HttpContext context) throws IOException {
+            httpContexts.set(context);
+            try {
+                return super.createLayeredSocket(socket, target, port, attachment, context);
+            } finally {
+                httpContexts.remove();
+            }
+        }
+
+        @Override
+        protected void prepareSocket(SSLSocket socket) throws IOException {
+            HttpContext context =  httpContexts.get();
+
+            if (context != null) {
+                Object objectRequest = context.getAttribute(JERSEY_REQUEST_ATTR_NAME);
+                if (objectRequest != null) {
+                    ClientRequest clientRequest = (ClientRequest) objectRequest;
+                    SSLParamConfigurator sniConfig = SSLParamConfigurator.builder().request(clientRequest)
+                            .setSNIHostName(clientRequest).build();
+                    sniConfig.setSNIServerName(socket);
+
+                    final int socketTimeout = ((ClientRequest) objectRequest).resolveProperty(ClientProperties.READ_TIMEOUT, -1);
+                    if (socketTimeout >= 0) {
+                        socket.setSoTimeout(socketTimeout);
+                    }
+                }
+            }
+        }
+    }
+
+    private static class CancellableInputStream extends InputStreamWrapper {
+        private final InputStream in;
+        private final Supplier<Boolean> isCancelled;
+
+        private CancellableInputStream(InputStream in, Supplier<Boolean> isCancelled) {
+            this.in = in;
+            this.isCancelled = isCancelled;
+        }
+
+        @Override
+        protected InputStream getWrapped() {
+            return in;
+        }
+
+        @Override
+        protected InputStream getWrappedIOE() throws IOException {
+            if (isCancelled.get()) {
+                throw new IOException(new CancellationException());
+            }
+            return in;
+        }
+    }
+
 }

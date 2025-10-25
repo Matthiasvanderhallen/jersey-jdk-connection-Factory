@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -35,17 +35,18 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.glassfish.jersey.innate.io.InputStreamWrapper;
 import org.glassfish.jersey.logging.LoggingFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 import org.glassfish.jersey.test.TestProperties;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Buffered response entity tests.
@@ -57,7 +58,7 @@ public class ResponseReadAndBufferEntityTest extends JerseyTest {
 
     private static final Logger LOGGER = Logger.getLogger(ResponseReadAndBufferEntityTest.class.getName());
 
-    public static class CorruptableInputStream extends InputStream {
+    public static class CorruptableInputStream extends InputStreamWrapper {
 
         private final AtomicInteger closeCounter = new AtomicInteger(0);
 
@@ -71,53 +72,16 @@ public class ResponseReadAndBufferEntityTest extends JerseyTest {
         }
 
         @Override
-        public synchronized int read() throws IOException {
+        protected InputStream getWrapped() {
+            return delegate;
+        }
+
+        @Override
+        protected InputStream getWrappedIOE() throws IOException {
             if (corruptRead) {
                 corrupt();
             }
-            return delegate.read();
-        }
-
-        @Override
-        public int read(final byte[] b) throws IOException {
-            if (corruptRead) {
-                corrupt();
-            }
-            return delegate.read(b);
-        }
-
-        @Override
-        public int read(final byte[] b, final int off, final int len) throws IOException {
-            if (corruptRead) {
-                corrupt();
-            }
-            return delegate.read(b, off, len);
-        }
-
-        @Override
-        public long skip(final long n) throws IOException {
-            if (corruptRead) {
-                corrupt();
-            }
-            return delegate.skip(n);
-        }
-
-        @Override
-        public int available() throws IOException {
-            if (corruptRead) {
-                corrupt();
-            }
-            return delegate.available();
-        }
-
-        @Override
-        public boolean markSupported() {
-            return delegate.markSupported();
-        }
-
-        @Override
-        public void mark(final int readAheadLimit) {
-            delegate.mark(readAheadLimit);
+            return delegate;
         }
 
         @Override
@@ -267,13 +231,13 @@ public class ResponseReadAndBufferEntityTest extends JerseyTest {
         // Read entity should not fail - we silently consume the underlying IOException from closed input stream.
         final String entity = response.readEntity(String.class, null);
         assertThat("Unexpected response.", entity.toString(), equalTo(Resource.ENTITY));
-        assertEquals("Close not invoked on underlying input stream.", 1, entityStream.getCloseCount());
+        assertEquals(1, entityStream.getCloseCount(), "Close not invoked on underlying input stream.");
 
         // Close should not fail and should be idempotent
         response.close();
         response.close();
         response.close();
-        assertEquals("Close invoked too many times on underlying input stream.", 1, entityStream.getCloseCount());
+        assertEquals(1, entityStream.getCloseCount(), "Close invoked too many times on underlying input stream.");
 
         try {
             // UC-1.1 : Try to read an unbuffered entity from a closed context
@@ -307,7 +271,7 @@ public class ResponseReadAndBufferEntityTest extends JerseyTest {
         entityStream.setCorruptClose(true);
 
         response.bufferEntity();
-        assertEquals("Close not invoked on underlying input stream.", 1, entityStream.getCloseCount());
+        assertEquals(1, entityStream.getCloseCount(), "Close not invoked on underlying input stream.");
 
         String entity;
         entity = response.readEntity(String.class, null);
@@ -319,7 +283,7 @@ public class ResponseReadAndBufferEntityTest extends JerseyTest {
         response.close();
         response.close();
         response.close();
-        assertEquals("Close invoked too many times on underlying input stream.", 1, entityStream.getCloseCount());
+        assertEquals(1, entityStream.getCloseCount(), "Close invoked too many times on underlying input stream.");
 
         try {
             // UC-2.1 : Try to read a buffered entity from a closed context

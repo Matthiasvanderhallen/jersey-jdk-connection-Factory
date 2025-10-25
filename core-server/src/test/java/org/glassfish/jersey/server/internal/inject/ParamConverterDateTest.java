@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -21,7 +21,7 @@ import org.glassfish.jersey.internal.inject.Binder;
 import org.glassfish.jersey.internal.inject.ExtractorException;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.internal.LocalizationMessages;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -37,9 +37,11 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ParamConverterDateTest extends AbstractTest {
+    private final String format = "EEE MMM dd HH:mm:ss Z yyyy";
+    private final SimpleDateFormat formatter = new SimpleDateFormat(format, new Locale("US"));
 
     @Path("/")
     public static class DateResource {
@@ -55,7 +57,7 @@ public class ParamConverterDateTest extends AbstractTest {
     public void testDateResource() throws ExecutionException, InterruptedException {
         initiateWebApplication(getBinder(), ParamConverterDateTest.DateResource.class);
         final ContainerResponse responseContext = getResponseContext(UriBuilder.fromPath("/")
-                .queryParam("d", new Date()).build().toString());
+                .queryParam("d", formatter.format(new Date())).build().toString());
 
         assertEquals(200, responseContext.getStatus());
     }
@@ -80,8 +82,6 @@ public class ParamConverterDateTest extends AbstractTest {
                                     );
                                 }
                                 try {
-                                    final String format = "EEE MMM dd HH:mm:ss Z yyyy";
-                                    final SimpleDateFormat formatter = new SimpleDateFormat(format, new Locale("US"));
                                     return rawType.cast(formatter.parse(value));
                                 } catch (final ParseException ex) {
                                     throw new ExtractorException(ex);

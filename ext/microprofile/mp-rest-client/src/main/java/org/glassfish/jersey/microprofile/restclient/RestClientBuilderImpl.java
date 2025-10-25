@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024 Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2019, 2021 Payara Foundation and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -33,13 +33,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.annotation.Priority;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.Priorities;
@@ -61,11 +59,13 @@ import org.eclipse.microprofile.rest.client.ext.AsyncInvocationInterceptorFactor
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.eclipse.microprofile.rest.client.spi.RestClientListener;
+import org.glassfish.jersey.JerseyPriorities;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.client.Initializable;
 import org.glassfish.jersey.client.spi.ConnectorProvider;
 import org.glassfish.jersey.ext.cdi1x.internal.CdiUtil;
+import org.glassfish.jersey.innate.VirtualThreadUtil;
 import org.glassfish.jersey.internal.ServiceFinder;
 import org.glassfish.jersey.internal.inject.InjectionManager;
 import org.glassfish.jersey.internal.inject.InjectionManagerSupplier;
@@ -111,7 +111,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
         asyncInterceptorFactories = new ArrayList<>();
         config = ConfigProvider.getConfig();
         configWrapper = new ConfigWrapper(clientBuilder.getConfiguration());
-        executorService = Executors::newCachedThreadPool;
+        executorService = () -> VirtualThreadUtil.withConfig(configWrapper).newCachedThreadPool();
     }
 
     @Override
@@ -299,8 +299,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
         } else if (providerPriorityJersey instanceof Integer) {
             return (int) providerPriorityJersey;
         }
-        Priority priority = providerClass.getAnnotation(Priority.class);
-        return priority == null ? -1 : priority.value();
+        return JerseyPriorities.getPriorityValue(providerClass, -1);
     }
 
     @Override
@@ -524,9 +523,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
 
         Integer getPriority() {
             if (priority == null) {
-                priority = Optional.ofNullable(factory.getClass().getAnnotation(Priority.class))
-                        .map(Priority::value)
-                        .orElse(Priorities.USER);
+                priority = JerseyPriorities.getPriorityValue(factory.getClass(), Priorities.USER);
             }
             return priority;
         }

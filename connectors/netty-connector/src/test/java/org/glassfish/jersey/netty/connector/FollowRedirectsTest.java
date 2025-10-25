@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -16,33 +16,46 @@
 
 package org.glassfish.jersey.netty.connector;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URI;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Application;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
+import org.glassfish.jersey.client.RequestEntityProcessing;
 import org.glassfish.jersey.logging.LoggingFeature;
 import org.glassfish.jersey.netty.connector.internal.RedirectException;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class FollowRedirectsTest extends JerseyTest {
 
     private static final Logger LOGGER = Logger.getLogger(FollowRedirectsTest.class.getName());
-    private static final String TEST_URL = "http://localhost:9998/test";
+    private static final String TEST_URL = "http://localhost:%d/test";
+    private static final AtomicReference<String> TEST_URL_REF = new AtomicReference<>();
+
+    @BeforeEach
+    public void before() {
+        final String url = String.format(TEST_URL, getPort());
+        TEST_URL_REF.set(url);
+    }
 
     @Path("/test")
     public static class RedirectResource {
@@ -51,22 +64,33 @@ public class FollowRedirectsTest extends JerseyTest {
             return "GET";
         }
 
+        @POST
+        public String post() {
+            return "POST";
+        }
+
         @GET
         @Path("redirect")
         public Response redirect() {
-            return Response.seeOther(URI.create(TEST_URL)).build();
+            return Response.seeOther(URI.create(TEST_URL_REF.get())).build();
         }
 
         @GET
         @Path("loop")
         public Response loop() {
-            return Response.seeOther(URI.create(TEST_URL + "/loop")).build();
+            return Response.seeOther(URI.create(TEST_URL_REF.get() + "/loop")).build();
         }
 
         @GET
         @Path("redirect2")
         public Response redirect2() {
-            return Response.seeOther(URI.create(TEST_URL + "/redirect")).build();
+            return Response.seeOther(URI.create(TEST_URL_REF.get() + "/redirect")).build();
+        }
+
+        @POST
+        @Path("status307")
+        public Response status307() {
+            return Response.temporaryRedirect(URI.create(TEST_URL_REF.get())).build();
         }
     }
 
@@ -159,5 +183,16 @@ public class FollowRedirectsTest extends JerseyTest {
         Response r = t.request().get();
         assertEquals(200, r.getStatus());
         assertEquals("GET", r.readEntity(String.class));
+    }
+
+    @Test
+    public void testRedirect307PostBuffered() {
+        try (Response response = target("test/status307")
+                .property(ClientProperties.FOLLOW_REDIRECTS, true)
+                .property(ClientProperties.REQUEST_ENTITY_PROCESSING, RequestEntityProcessing.BUFFERED)
+                .request().post(Entity.entity("Something", MediaType.TEXT_PLAIN_TYPE))) {
+            assertEquals(200, response.getStatus());
+            assertEquals("POST", response.readEntity(String.class));
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.Produces;
@@ -41,6 +42,7 @@ import org.glassfish.jersey.message.internal.EntityInputStream;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.glassfish.jersey.message.internal.ReaderWriter;
 
 /**
  * Entity provider (reader and writer) for Gson.
@@ -56,6 +58,7 @@ public class JsonGsonProvider extends AbstractMessageReaderWriterProvider<Object
 
     private Providers providers;
 
+    @Inject
     public JsonGsonProvider(@Context Providers providers) {
         this.providers = providers;
     }
@@ -79,7 +82,7 @@ public class JsonGsonProvider extends AbstractMessageReaderWriterProvider<Object
         Gson gson = getGson(type);
         try {
             return gson.fromJson(new InputStreamReader(entityInputStream,
-                    AbstractMessageReaderWriterProvider.getCharset(mediaType)), genericType);
+                    ReaderWriter.getCharset(mediaType)), genericType);
         } catch (Exception e) {
             throw new ProcessingException(LocalizationMessages.ERROR_GSON_DESERIALIZATION(), e);
         }
@@ -98,7 +101,7 @@ public class JsonGsonProvider extends AbstractMessageReaderWriterProvider<Object
                         OutputStream entityStream) throws IOException, WebApplicationException {
         Gson gson = getGson(type);
         try {
-            entityStream.write(gson.toJson(o).getBytes(AbstractMessageReaderWriterProvider.getCharset(mediaType)));
+            entityStream.write(gson.toJson(o).getBytes(ReaderWriter.getCharset(mediaType)));
             entityStream.flush();
         } catch (Exception e) {
             throw new ProcessingException(LocalizationMessages.ERROR_GSON_SERIALIZATION(), e);

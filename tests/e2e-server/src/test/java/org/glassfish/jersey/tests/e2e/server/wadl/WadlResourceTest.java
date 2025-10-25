@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2021 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -27,8 +27,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
@@ -90,29 +92,26 @@ import org.glassfish.jersey.server.wadl.internal.WadlUtils;
 import org.glassfish.jersey.test.JerseyTest;
 import org.glassfish.jersey.test.TestProperties;
 
-import org.custommonkey.xmlunit.Diff;
-import org.custommonkey.xmlunit.ElementQualifier;
-import org.custommonkey.xmlunit.SimpleNamespaceContext;
-import org.custommonkey.xmlunit.XMLAssert;
-import org.custommonkey.xmlunit.XMLUnit;
-import org.custommonkey.xmlunit.examples.RecursiveElementNameAndTextQualifier;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import org.xmlunit.builder.DiffBuilder;
+import org.xmlunit.diff.Diff;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import com.google.common.collect.ImmutableMap;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sun.research.ws.wadl.Method;
 import com.sun.research.ws.wadl.Param;
@@ -129,8 +128,8 @@ import com.sun.research.ws.wadl.Resources;
  * @author Libor Kramolis
  * @author Marek Potociar
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
         WadlResourceTest.Wadl1Test.class,
         WadlResourceTest.Wadl2Test.class,
         WadlResourceTest.Wadl3Test.class,
@@ -400,6 +399,20 @@ public class WadlResourceTest {
 
             final Response r = target.queryParam(WadlUtils.DETAILED_WADL_QUERY_PARAM, "true").request().get(Response.class);
             assertTrue(r.getHeaders().containsKey("Last-modified"));
+        }
+
+        @Test
+        public void testLastModifiedGETOnJPLocale() {
+            Locale defaultLocale = Locale.getDefault();
+            try {
+                Locale.setDefault(new Locale("ja", "JP"));
+                final WebTarget target = target("/application.wadl");
+
+                final Response r = target.queryParam(WadlUtils.DETAILED_WADL_QUERY_PARAM, "true").request().get(Response.class);
+                assertDoesNotThrow(() -> r.getLastModified());
+            } finally {
+                Locale.setDefault(defaultLocale);
+            }
         }
 
         @Test
@@ -1057,7 +1070,7 @@ public class WadlResourceTest {
         }
 
         @Test
-        @Ignore("JERSEY-1670: WADL Options invoked on resources with same template returns only methods from one of them.")
+        @Disabled("JERSEY-1670: WADL Options invoked on resources with same template returns only methods from one of them.")
         // TODO: fix
         public void testWadlForAmbiguousResourceTemplates()
                 throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
@@ -1074,7 +1087,7 @@ public class WadlResourceTest {
         }
 
         @Test
-        @Ignore("JERSEY-1670: WADL Options invoked on resources with same template returns only methods from one of them.")
+        @Disabled("JERSEY-1670: WADL Options invoked on resources with same template returns only methods from one of them.")
         // TODO: fix
         public void testWadlForAmbiguousChildResourceTemplates()
                 throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
@@ -1270,19 +1283,16 @@ public class WadlResourceTest {
             final SimpleNamespaceResolver nsContext = new SimpleNamespaceResolver("wadl", "http://wadl.dev.java.net/2009/02");
             xp.setNamespaceContext(nsContext);
 
-            final Diff diff = XMLUnit.compareXML(
+            final Diff diff = DiffBuilder.compare(
                     nodeAsString(
                             xp.evaluate("//wadl:resource[@path='annotated']/wadl:resource", document,
-                                    XPathConstants.NODE)),
+                                    XPathConstants.NODE)))
+                .withTest(
                     nodeAsString(
                             xp.evaluate("//wadl:resource[@path='not-annotated']/wadl:resource", document,
                                     XPathConstants.NODE))
-            );
-            XMLUnit.setXpathNamespaceContext(
-                    new SimpleNamespaceContext(ImmutableMap.of("wadl", "http://wadl.dev.java.net/2009/02")));
-            final ElementQualifier elementQualifier = new RecursiveElementNameAndTextQualifier();
-            diff.overrideElementQualifier(elementQualifier);
-            XMLAssert.assertXMLEqual(diff, true);
+            ).withNamespaceContext(Collections.singletonMap("wadl", "http://wadl.dev.java.net/2009/02")).build();
+            Assertions.assertFalse(diff.hasDifferences());
 
         }
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1" ?>
 <!--
 
-    Copyright (c) 2010, 2022 Oracle and/or its affiliates. All rights reserved.
+    Copyright (c) 2010, 2025 Oracle and/or its affiliates. All rights reserved.
 
     This program and the accompanying materials are made available under the
     terms of the Eclipse Public License v. 2.0, which is available at
@@ -50,7 +50,7 @@
 <!ENTITY guava.link "<link xlink:href='https://guava.dev/'>Guava</link>">
 <!ENTITY heroku.uri "https://www.heroku.com">
 <!ENTITY heroku.link "<link xlink:href='&heroku.uri;'>Heroku</link>">
-<!ENTITY hk2.javadoc.uri "https://javaee.github.io/hk2/apidocs/">
+<!ENTITY hk2.javadoc.uri "https://javaee.github.io/hk2/apidocs">
 <!ENTITY hk2.link "<link xlink:href='https://javaee.github.io/hk2/'>HK2</link>">
 <!ENTITY hk2.spring-bridge.link "<link xlink:href='https://javaee.github.io/hk2/spring-bridge/'>The Spring/HK2 Bridge</link>">
 <!ENTITY jaxb.release.uri "https://eclipse-ee4j.github.io/jaxb-ri">
@@ -109,6 +109,8 @@
 <!ENTITY helidon.link "<link xlink:href='https://helidon.io/'>Helidon</link>">
 <!ENTITY smallrye.link "<link xlink:href='https://smallrye.io/'>SmallRye</link>">
 <!ENTITY yasson.link "<link xlink:href='https://eclipse-ee4j.github.io/yasson/'>Yasson</link>">
+<!ENTITY micrometer.link "<link xlink:href='https://micrometer.io/'>Micrometer project</link>">
+<!ENTITY micrometer.jersey.link "<link xlink:href='https://micrometer.io/docs/ref/jetty'>Micrometer Jersey/Jetty support</link>">
 
 <!-- API Docs links -->
 <!ENTITY bv.Configuration "<link xlink:href='&bv11.javadoc.uri;/javax/validation/Configuration.html'>Configuration</link>">
@@ -212,6 +214,7 @@
 <!ENTITY jaxrs.core.Cookie "<link xlink:href='&jaxrs.javadoc.uri;/core/Cookie.html'>Cookie</link>">
 <!ENTITY jaxrs.core.EntityTag "<link xlink:href='&jaxrs.javadoc.uri;/core/EntityTag.html'>EntityTag</link>">
 <!ENTITY jaxrs.core.Feature "<link xlink:href='&jaxrs.javadoc.uri;/core/Feature.html'>Feature</link>">
+<!ENTITY jaxrs.core.FeatureContext "<link xlink:href='&jaxrs.javadoc.uri;/core/FeatureContext.html'>FeatureContext</link>">
 <!ENTITY jaxrs.core.Form "<link xlink:href='&jaxrs.javadoc.uri;/core/Form.html'>Form</link>">
 <!ENTITY jaxrs.core.GenericEntity "<link xlink:href='&jaxrs.javadoc.uri;/core/GenericEntity.html'>GenericEntity&lt;T&gt;</link>">
 <!ENTITY jaxrs.core.GenericType "<link xlink:href='&jaxrs.javadoc.uri;/core/GenericType.html'>GenericType&lt;T&gt;</link>">
@@ -239,6 +242,7 @@
 <!ENTITY jaxrs.ext.ExceptionMapper "<link xlink:href='&jaxrs.javadoc.uri;/ext/ExceptionMapper.html'>ExceptionMapper&lt;E extends Throwable&gt;</link>">
 <!ENTITY jaxrs.ext.MessageBodyReader "<link xlink:href='&jaxrs.javadoc.uri;/ext/MessageBodyReader.html'>MessageBodyReader&lt;T&gt;</link>">
 <!ENTITY jaxrs.ext.MessageBodyWriter "<link xlink:href='&jaxrs.javadoc.uri;/ext/MessageBodyWriter.html'>MessageBodyWriter&lt;T&gt;</link>">
+<!ENTITY jaxrs.ext.ParamConverter "<link xlink:href='&jaxrs.javadoc.uri;/ext/ParamConverter.html'>ParamConverter&lt;T&gt;</link>">
 <!ENTITY jaxrs.ext.Provider "<link xlink:href='&jaxrs.javadoc.uri;/ext/Provider.html'>@Provider</link>">
 <!ENTITY jaxrs.ext.Providers "<link xlink:href='&jaxrs.javadoc.uri;/ext/Providers.html'>Providers</link>">
 <!ENTITY jaxrs.ext.RuntimeDelegate "<link xlink:href='&jaxrs.javadoc.uri;/ext/RuntimeDelegate.html'>RuntimeDelegate</link>">
@@ -336,9 +340,11 @@
 <!ENTITY jersey.client.ClientProperties.BUFFER_RESPONSE_ENTITY_ON_EXCEPTION "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#BUFFER_RESPONSE_ENTITY_ON_EXCEPTION'>ClientProperties.BUFFER_RESPONSE_ENTITY_ON_EXCEPTION</link>" >
 <!ENTITY jersey.client.ClientProperties.CHUNKED_ENCODING_SIZE "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#CHUNKED_ENCODING_SIZE'>ClientProperties.CHUNKED_ENCODING_SIZE</link>" >
 <!ENTITY jersey.client.ClientProperties.CONNECT_TIMEOUT "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#CONNECT_TIMEOUT'>ClientProperties.CONNECT_TIMEOUT</link>" >
+<!ENTITY jersey.client.ClientProperties.CONNECTOR_PROVIDER "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#CONNECTOR_PROVIDER'>ClientProperties.CONNECTOR_PROVIDER</link>" >
 <!ENTITY jersey.client.ClientProperties.DEFAULT_CHUNK_SIZE "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#DEFAULT_CHUNK_SIZE'>ClientProperties.DEFAULT_CHUNK_SIZE</link>" >
 <!ENTITY jersey.client.ClientProperties.FEATURE_AUTO_DISCOVERY_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#FEATURE_AUTO_DISCOVERY_DISABLE'>ClientProperties.FEATURE_AUTO_DISCOVERY_DISABLE</link>" >
 <!ENTITY jersey.client.ClientProperties.FOLLOW_REDIRECTS "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#FOLLOW_REDIRECTS'>ClientProperties.FOLLOW_REDIRECTS</link>" >
+<!ENTITY jersey.client.ClientProperties.JSON_BINDING_FEATURE_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#JSON_BINDING_FEATURE_DISABLE'>ClientProperties.JSON_BINDING_FEATURE_DISABLE</link>" >
 <!ENTITY jersey.client.ClientProperties.JSON_PROCESSING_FEATURE_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#JSON_PROCESSING_FEATURE_DISABLE'>ClientProperties.JSON_PROCESSING_FEATURE_DISABLE</link>" >
 <!ENTITY jersey.client.ClientProperties.METAINF_SERVICES_LOOKUP_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#METAINF_SERVICES_LOOKUP_DISABLE'>ClientProperties.METAINF_SERVICES_LOOKUP_DISABLE</link>" >
 <!ENTITY jersey.client.ClientProperties.MOXY_JSON_FEATURE_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#MOXY_JSON_FEATURE_DISABLE'>ClientProperties.MOXY_JSON_FEATURE_DISABLE</link>" >
@@ -348,7 +354,9 @@
 <!ENTITY jersey.client.ClientProperties.PROXY_USERNAME "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#PROXY_USERNAME'>ClientProperties.PROXY_USERNAME</link>" >
 <!ENTITY jersey.client.ClientProperties.READ_TIMEOUT "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#READ_TIMEOUT'>ClientProperties.READ_TIMEOUT</link>" >
 <!ENTITY jersey.client.ClientProperties.REQUEST_ENTITY_PROCESSING "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#REQUEST_ENTITY_PROCESSING'>ClientProperties.REQUEST_ENTITY_PROCESSING</link>" >
+<!ENTITY jersey.client.ClientProperties.SNI_HOST_NAME "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#SNI_HOST_NAME'>ClientProperties.SNI_HOST_NAME</link>" >
 <!ENTITY jersey.client.ClientProperties.SUPPRESS_HTTP_COMPLIANCE_VALIDATION "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#SUPPRESS_HTTP_COMPLIANCE_VALIDATION'>ClientProperties.SUPPRESS_HTTP_COMPLIANCE_VALIDATION</link>" >
+<!ENTITY jersey.client.ClientProperties.SSL_CONTEXT_SUPPLIER "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#SSL_CONTEXT_SUPPLIER'>ClientProperties.SSL_CONTEXT_SUPPLIER</link>" >
 <!ENTITY jersey.client.ClientProperties.USE_ENCODING "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#USE_ENCODING'>ClientProperties.USE_ENCODING</link>" >
 <!ENTITY jersey.client.ClientProperties.DIGESTAUTH_URI_CACHE_SIZELIMIT "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#DIGESTAUTH_URI_CACHE_SIZELIMIT'>ClientProperties.DIGESTAUTH_URI_CACHE_SIZELIMIT</link>" >
 <!ENTITY jersey.client.ClientProperties.EXPECT_100_CONTINUE "<link xlink:href='&jersey.javadoc.uri.prefix;/client/ClientProperties.html#EXPECT_100_CONTINUE'>ClientProperties.EXPECT_100_CONTINUE</link>" >
@@ -381,6 +389,10 @@
 <!ENTITY jersey.common.CommonProperties.FEATURE_AUTO_DISCOVERY_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#FEATURE_AUTO_DISCOVERY_DISABLE'>CommonProperties.FEATURE_AUTO_DISCOVERY_DISABLE</link>" >
 <!ENTITY jersey.common.CommonProperties.FEATURE_AUTO_DISCOVERY_DISABLE_CLIENT "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#FEATURE_AUTO_DISCOVERY_DISABLE_CLIENT'>CommonProperties.FEATURE_AUTO_DISCOVERY_DISABLE_CLIENT</link>" >
 <!ENTITY jersey.common.CommonProperties.FEATURE_AUTO_DISCOVERY_DISABLE_SERVER "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#FEATURE_AUTO_DISCOVERY_DISABLE_SERVER'>CommonProperties.FEATURE_AUTO_DISCOVERY_DISABLE_SERVER</link>" >
+<!ENTITY jersey.common.CommonProperties.JSON_BINDING_FEATURE_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#JSON_BINDING_FEATURE_DISABLE'>CommonProperties.JSON_BINDING_FEATURE_DISABLE</link>" >
+<!ENTITY jersey.common.CommonProperties.JSON_BINDING_FEATURE_DISABLE_CLIENT "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#JSON_BINDING_FEATURE_DISABLE_CLIENT'>CommonProperties.JSON_BINDING_FEATURE_DISABLE_CLIENT</link>" >
+<!ENTITY jersey.common.CommonProperties.JSON_BINDING_FEATURE_DISABLE_SERVER "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#JSON_BINDING_FEATURE_DISABLE_SERVER'>CommonProperties.JSON_BINDING_FEATURE_DISABLE_SERVER</link>" >
+<!ENTITY jersey.common.CommonProperties.JSON_BINDING_FEATURE_DISABLE_APPLICATION "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#JSON_BINDING_FEATURE_DISABLE_APPLICATION'>CommonProperties.JSON_BINDING_FEATURE_DISABLE_APPLICATION</link>" >
 <!ENTITY jersey.common.CommonProperties.JSON_PROCESSING_FEATURE_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#JSON_PROCESSING_FEATURE_DISABLE'>CommonProperties.JSON_PROCESSING_FEATURE_DISABLE</link>" >
 <!ENTITY jersey.common.CommonProperties.JSON_PROCESSING_FEATURE_DISABLE_CLIENT "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#JSON_PROCESSING_FEATURE_DISABLE_CLIENT'>CommonProperties.JSON_PROCESSING_FEATURE_DISABLE_CLIENT</link>" >
 <!ENTITY jersey.common.CommonProperties.JSON_PROCESSING_FEATURE_DISABLE_SERVER "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#JSON_PROCESSING_FEATURE_DISABLE_SERVER'>CommonProperties.JSON_PROCESSING_FEATURE_DISABLE_SERVER</link>" >
@@ -400,9 +412,14 @@
 <!ENTITY jersey.common.CommonProperties.JSON_JACKSON_DISABLED_MODULES "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#JSON_JACKSON_DISABLED_MODULES'>CommonProperties.JSON_JACKSON_DISABLED_MODULES</link>" >
 <!ENTITY jersey.common.CommonProperties.JSON_JACKSON_DISABLED_MODULES_CLIENT "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#JSON_JACKSON_DISABLED_MODULES'>CommonProperties.JSON_JACKSON_DISABLED_MODULES_CLIENT</link>" >
 <!ENTITY jersey.common.CommonProperties.JSON_JACKSON_DISABLED_MODULES_SERVER "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#JSON_JACKSON_DISABLED_MODULES'>CommonProperties.JSON_JACKSON_DISABLED_MODULES_SERVER</link>" >
+<!ENTITY jersey.common.CommonProperties.PARAM_CONVERTERS_THROW_IAE "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#PARAM_CONVERTERS_THROW_IAE'>CommonProperties.PARAM_CONVERTERS_THROW_IAE</link>" >
+<!ENTITY jersey.common.CommonProperties.THREAD_FACTORY "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#THREAD_FACTORY'>CommonProperties.THREAD_FACTORY</link>" >
+<!ENTITY jersey.common.CommonProperties.USE_VIRTUAL_THREADS "<link xlink:href='&jersey.javadoc.uri.prefix;/CommonProperties.html#USE_VIRTUAL_THREADS'>CommonProperties.USE_VIRTUAL_THREADS</link>" >
 <!ENTITY jersey.common.internal.inject.DisposableSupplier "<link xlink:href='&jersey.javadoc.uri.prefix;/internal/inject/DisposableSupplier.html'>DisposableSupplier</link>">
 <!ENTITY jersey.common.internal.inject.InjectionManager "<link xlink:href='&jersey.javadoc.uri.prefix;/internal/inject/InjectionManager.html'>InjectionManager</link>">
+<!ENTITY jersey.common.internal.inject.InjectionResolver "<link xlink:href='&jersey.javadoc.uri.prefix;/internal/inject/InjectionResolver.html'>InjectionResolver</link>">
 <!ENTITY jersey.common.internal.inject.AbstractBinder "<link xlink:href='&jersey.javadoc.uri.prefix;/internal/inject/AbstractBinder.html'>AbstractBinder</link>">
+<!ENTITY jersey.common.internal.inject.PerLookup "<link xlink:href='&jersey.javadoc.uri.prefix;/internal/inject/PerLookup.html'>PerLookup</link>">
 <!ENTITY jersey.common.internal.inject.Binder "<link xlink:href='&jersey.javadoc.uri.prefix;/internal/inject/Binder.html'>Binder</link>">
 <!ENTITY jersey.common.ServiceLocatorProvider "<link xlink:href='&jersey.javadoc.uri.prefix;/ServiceLocatorProvider.html'>ServiceLocatorProvider</link>">
 <!ENTITY jersey.common.SslConfigurator "<link xlink:href='&jersey.javadoc.uri.prefix;/SslConfigurator.html'>SslConfigurator</link>">
@@ -472,6 +489,7 @@
 <!ENTITY jersey.jetty.JettyClientProperties.SYNC_LISTENER_RESPONSE_MAX_SIZE "<link xlink:href='&jersey.javadoc.uri.prefix;/jetty/connector/JettyClientProperties.html#SYNC_LISTENER_RESPONSE_MAX_SIZE'>JettyClientProperties.SYNC_LISTENER_RESPONSE_MAX_SIZE</link>" >
 <!ENTITY jersey.jetty.JettyClientProperties.TOTAL_TIMEOUT "<link xlink:href='&jersey.javadoc.uri.prefix;/jetty/connector/JettyClientProperties.html#TOTAL_TIMEOUT'>JettyClientProperties.TOTAL_TIMEOUT</link>" >
 <!ENTITY jersey.jetty.JettyConnectorProvider "<link xlink:href='&jersey.javadoc.uri.prefix;/jetty/connector/JettyConnectorProvider.html'>JettyConnectorProvider</link>">
+<!ENTITY jersey.jetty.JettyHttp2ConnectorProvider "<link xlink:href='&jersey.javadoc.uri.prefix;/jetty/http2/connector/JettyConnectorProvider.html'>JettyHttp2ConnectorProvider</link>">
 <!ENTITY jersey.jetty.JettyHttpContainer "<link xlink:href='&jersey.javadoc.uri.prefix;/jetty/JettyHttpContainer.html'>JettyHttpContainer</link>">
 <!ENTITY jersey.jetty.JettyHttpContainerFactory "<link xlink:href='&jersey.javadoc.uri.prefix;/jetty/JettyHttpContainerFactory.html'>JettyHttpContainerFactory</link>">
 <!ENTITY jersey.jetty.JettyHttpContainerProvider "<link xlink:href='&jersey.javadoc.uri.prefix;/jetty/JettyHttpContainerProvider.html'>JettyHttpContainerProvider</link>">
@@ -525,9 +543,21 @@
 <!ENTITY jersey.media.multipart.FormDataParam "<link xlink:href='&jersey.javadoc.uri.prefix;/media/multipart/FormDataParam.html'>@FormDataParam</link>" >
 <!ENTITY jersey.media.multipart.MultiPart "<link xlink:href='&jersey.javadoc.uri.prefix;/media/multipart/MultiPart.html'>MultiPart</link>" >
 <!ENTITY jersey.media.multipart.MultiPartFeature "<link xlink:href='&jersey.javadoc.uri.prefix;/media/multipart/MultiPartFeature.html'>MultiPartFeature</link>" >
-<!ENTITY jersey.media.multipart.StreamDataBodyPart "<link xlink:href='&jersey.javadoc.uri.prefix;/media/multipart/file/StreamDataBodyPart.html'>StreamDataBodyPart</link>" >
+<!ENTITY jersey.media.multipart.MultiPartProperties "<link xlink:href='&jersey.javadoc.uri.prefix;/media/multipart/MultiPartProperties.html'>MultiPartProperties</link>" >
+<!ENTITY jersey.media.multipart.MultiPartProperties.BUFFER_THRESHOLD "<link xlink:href='&jersey.javadoc.uri.prefix;/media/multipart/MultiPartProperties.html#BUFFER_THRESHOLD'>MultiPartProperties.BUFFER_THRESHOLD</link>">
+<!ENTITY jersey.media.multipart.MultiPartProperties.MAX_PARTS "<link xlink:href='&jersey.javadoc.uri.prefix;/media/multipart/MultiPartProperties.html#MAX_PARTS'>MultiPartProperties.MAX_PARTS</link>">
+<!ENTITY jersey.media.multipart.MultiPartProperties.MULTI_PART_CONFIG_RESOURCE "<link xlink:href='&jersey.javadoc.uri.prefix;/media/multipart/MultiPartProperties.html#MULTI_PART_CONFIG_RESOURCE'>MultiPartProperties.MULTI_PART_CONFIG_RESOURCE</link>">
+<!ENTITY jersey.media.multipart.MultiPartProperties.TEMP_DIRECTORY "<link xlink:href='&jersey.javadoc.uri.prefix;/media/multipart/MultiPartProperties.html#TEMP_DIRECTORY'>MultiPartProperties.TEMP_DIRECTORY</link>">
+<!ENTITY jersey.media.multipart.StreamDataBodyPart "<link xlink:href='&jersey.javadoc.uri.prefix;/media/multipart/file/StreamDataBodyPart.html'>StreamDataBodyPart</link>">
 <!ENTITY jersey.message.MessageBodyWorkers "<link xlink:href='&jersey.javadoc.uri.prefix;/message/MessageBodyWorkers.html'>MessageBodyWorkers</link>">
 <!ENTITY jersey.message.MessageProperties "<link xlink:href='&jersey.javadoc.uri.prefix;/message/MessageProperties.html'>MessageProperties</link>">
+<!ENTITY jersey.message.MessageProperties.DEFLATE_WITHOUT_ZLIB "<link xlink:href='&jersey.javadoc.uri.prefix;/message/MessageProperties.html#DEFLATE_WITHOUT_ZLIB'>MessageProperties.DEFLATE_WITHOUT_ZLIB</link>">
+<!ENTITY jersey.message.MessageProperties.IO_BUFFER_SIZE "<link xlink:href='&jersey.javadoc.uri.prefix;/message/MessageProperties.html#IO_BUFFER_SIZE'>MessageProperties.IO_BUFFER_SIZE</link>">
+<!ENTITY jersey.message.MessageProperties.IO_DEFAULT_BUFFER_SIZE "<link xlink:href='&jersey.javadoc.uri.prefix;/message/MessageProperties.html#IO_DEFAULT_BUFFER_SIZE'>MessageProperties.IO_DEFAULT_BUFFER_SIZE</link>">
+<!ENTITY jersey.message.MessageProperties.JAXB_PROCESS_XML_ROOT_ELEMENT "<link xlink:href='&jersey.javadoc.uri.prefix;/message/MessageProperties.html#JAXB_PROCESS_XML_ROOT_ELEMENT'>MessageProperties.JAXB_PROCESS_XML_ROOT_ELEMENT</link>">
+<!ENTITY jersey.message.MessageProperties.JSON_MAX_STRING_LENGTH "<link xlink:href='&jersey.javadoc.uri.prefix;/message/MessageProperties.html#JSON_MAX_STRING_LENGTH'>MessageProperties.JSON_MAX_STRING_LENGTH</link>">
+<!ENTITY jersey.message.MessageProperties.XML_SECURITY_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/message/MessageProperties.html#XML_SECURITY_DISABLE'>MessageProperties.XML_SECURITY_DISABLE</link>">
+<!ENTITY jersey.message.MessageProperties.XML_FORMAT_OUTPUT "<link xlink:href='&jersey.javadoc.uri.prefix;/message/MessageProperties.html#XML_FORMAT_OUTPUT'>MessageProperties.XML_FORMAT_OUTPUT</link>">
 <!ENTITY jersey.message.filtering.AbstractEntityProcessor "<link xlink:href='&jersey.javadoc.uri.prefix;/message/filtering/spi/AbstractEntityProcessor.html'>AbstractEntityProcessor</link>">
 <!ENTITY jersey.message.filtering.AbstractObjectProvider "<link xlink:href='&jersey.javadoc.uri.prefix;/message/filtering/spi/AbstractObjectProvider.html'>AbstractObjectProvider</link>">
 <!ENTITY jersey.message.filtering.EntityFiltering "<link xlink:href='&jersey.javadoc.uri.prefix;/message/filtering/EntityFiltering.html'>@EntityFiltering</link>">
@@ -541,11 +571,19 @@
 <!ENTITY jersey.message.filtering.SecurityEntityFilteringFeature "<link xlink:href='&jersey.javadoc.uri.prefix;/message/filtering/SecurityEntityFilteringFeature.html'>SecurityEntityFilteringFeature</link>">
 <!ENTITY jersey.message.filtering.SelectableEntityFilteringFeature "<link xlink:href='&jersey.javadoc.uri.prefix;/message/filtering/SelectableEntityFilteringFeature.html'>SelectableEntityFilteringFeature</link>">
 <!ENTITY jersey.netty.NettyClientProperties "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html'>NettyClientProperties</link>" >
+<!ENTITY jersey.netty.NettyClientProperties.HTTP_REDIRECT_CONTROLLER "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html#HTTP_REDIRECT_CONTROLLER'>NettyClientProperties.HTTP_REDIRECT_CONTROLLER</link>" >
+<!ENTITY jersey.netty.NettyClientProperties.FILTER_HEADERS_FOR_PROXY "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html#FILTER_HEADERS_FOR_PROXY'>NettyClientProperties.FILTER_HEADERS_FOR_PROXY</link>" >
 <!ENTITY jersey.netty.NettyClientProperties.IDLE_CONNECTION_PRUNE_TIMEOUT "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html#IDLE_CONNECTION_PRUNE_TIMEOUT'>NettyClientProperties.IDLE_CONNECTION_PRUNE_TIMEOUT</link>" >
 <!ENTITY jersey.netty.NettyClientProperties.MAX_CONNECTIONS "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html#MAX_CONNECTIONS'>NettyClientProperties.MAX_CONNECTIONS</link>" >
 <!ENTITY jersey.netty.NettyClientProperties.MAX_CONNECTIONS_TOTAL "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html#MAX_CONNECTIONS_TOTAL'>NettyClientProperties.MAX_CONNECTIONS_TOTAL</link>" >
 <!ENTITY jersey.netty.NettyClientProperties.MAX_REDIRECTS "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html#MAX_REDIRECTS'>NettyClientProperties.MAX_REDIRECTS</link>" >
+<!ENTITY jersey.netty.NettyClientProperties.PRESERVE_METHOD_ON_REDIRECT "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html#PRESERVE_METHOD_ON_REDIRECT'>NettyClientProperties.PRESERVE_METHOD_ON_REDIRECT</link>" >
+<!ENTITY jersey.netty.NettyClientProperties.EXPECT_100_CONTINUE_TIMEOUT "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html#EXPECT_100_CONTINUE_TIMEOUT'>NettyClientProperties.EXPECT_100_CONTINUE_TIMEOUT</link>" >
+<!ENTITY jersey.netty.NettyClientProperties.MAX_HEADER_SIZE "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html#MAX_HEADER_SIZE'>NettyClientProperties.MAX_HEADER_SIZE</link>" >
+<!ENTITY jersey.netty.NettyClientProperties.MAX_INITIAL_LINE_LENGTH "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html#MAX_INITIAL_LINE_LENGTH'>NettyClientProperties.MAX_INITIAL_LINE_LENGTH</link>" >
+<!ENTITY jersey.netty.NettyClientProperties.MAX_CHUNK_SIZE "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyClientProperties.html#MAX_CHUNK_SIZE'>NettyClientProperties.MAX_CHUNK_SIZE</link>" >
 <!ENTITY jersey.netty.NettyConnectorProvider "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyConnectorProvider.html'>NettyConnectorProvider</link>">
+<!ENTITY jersey.netty.NettyHttpRedirectController "<link xlink:href='&jersey.javadoc.uri.prefix;/netty/connector/NettyHttpRedirectController.html'>NettyHttpRedirectController</link>">
 <!ENTITY jersey.server.ApplicationHandler "<link xlink:href='&jersey.javadoc.uri.prefix;/server/ApplicationHandler.html'>ApplicationHandler</link>">
 <!ENTITY jersey.server.BackgroundScheduler "<link xlink:href='&jersey.javadoc.uri.prefix;/server/BackgroundScheduler.html'>@BackgroundScheduler</link>">
 <!ENTITY jersey.server.BackgroundSchedulerLiteral "<link xlink:href='&jersey.javadoc.uri.prefix;/server/BackgroundSchedulerLiteral.html'>BackgroundSchedulerLiteral</link>">
@@ -574,6 +612,7 @@
 <!ENTITY jersey.server.ServerProperties.BV_SEND_ERROR_IN_RESPONSE "<link xlink:href='&jersey.javadoc.uri.prefix;/server/ServerProperties.html#BV_SEND_ERROR_IN_RESPONSE'>ServerProperties.BV_SEND_ERROR_IN_RESPONSE</link>" >
 <!ENTITY jersey.server.ServerProperties.FEATURE_AUTO_DISCOVERY_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/server/ServerProperties.html#FEATURE_AUTO_DISCOVERY_DISABLE'>ServerProperties.FEATURE_AUTO_DISCOVERY_DISABLE</link>" >
 <!ENTITY jersey.server.ServerProperties.HTTP_METHOD_OVERRIDE "<link xlink:href='&jersey.javadoc.uri.prefix;/server/ServerProperties.html#HTTP_METHOD_OVERRIDE'>ServerProperties.HTTP_METHOD_OVERRIDE</link>" >
+<!ENTITY jersey.server.ServerProperties.JSON_BINDING_FEATURE_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/server/ServerProperties.html#JSON_BINDING_FEATURE_DISABLE'>ServerProperties.JSON_BINDING_FEATURE_DISABLE</link>" >
 <!ENTITY jersey.server.ServerProperties.JSON_PROCESSING_FEATURE_DISABLE "<link xlink:href='&jersey.javadoc.uri.prefix;/server/ServerProperties.html#JSON_PROCESSING_FEATURE_DISABLE'>ServerProperties.JSON_PROCESSING_FEATURE_DISABLE</link>" >
 <!ENTITY jersey.server.ServerProperties.LANGUAGE_MAPPINGS "<link xlink:href='&jersey.javadoc.uri.prefix;/server/ServerProperties.html#LANGUAGE_MAPPINGS'>ServerProperties.LANGUAGE_MAPPINGS</link>" >
 <!ENTITY jersey.server.ServerProperties.MEDIA_TYPE_MAPPINGS "<link xlink:href='&jersey.javadoc.uri.prefix;/server/ServerProperties.html#MEDIA_TYPE_MAPPINGS'>ServerProperties.MEDIA_TYPE_MAPPINGS</link>" >
@@ -921,6 +960,7 @@
 <!ENTITY lit.jersey.client.EncodingFeature "<literal>EncodingFeature</literal>">
 <!ENTITY lit.jersey.client.HttpAuthenticationFeature "<literal>HttpAuthenticationFeature</literal>">
 <!ENTITY lit.jersey.client.HttpUrlConnectorProvider "<literal>HttpUrlConnectorProvider</literal>">
+<!ENTITY lit.jersey.client.HttpUrlConnector "<literal>HttpUrlConnector</literal>">
 <!ENTITY lit.jersey.client.InjectionManagerClientProvider "<literal>InjectionManagerClientProvider</literal>">
 <!ENTITY lit.jersey.client.oauth1.AccessToken "<literal>AccessToken</literal>">
 <!ENTITY lit.jersey.client.oauth1.ConsumerCredentials "<literal>ConsumerCredentials</literal>">

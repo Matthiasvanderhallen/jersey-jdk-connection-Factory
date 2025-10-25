@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2021 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2025 Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2018 Payara Foundation and/or its affiliates.
  *
  * This program and the accompanying materials are made available under the
@@ -27,14 +27,18 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import javax.annotation.Priority;
+import javax.inject.Singleton;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
@@ -43,16 +47,18 @@ import org.glassfish.jersey.internal.inject.ExtractorException;
 import org.glassfish.jersey.internal.inject.ParamConverters;
 import org.glassfish.jersey.internal.util.ReflectionHelper;
 import org.glassfish.jersey.internal.util.collection.ClassTypePair;
+import org.glassfish.jersey.model.internal.CommonConfig;
+import org.glassfish.jersey.model.internal.ComponentBag;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.RequestContextBuilder;
 import org.glassfish.jersey.server.ResourceConfig;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests {@link ParamConverter param converters}.
@@ -99,6 +105,15 @@ public class ParamConverterInternalTest extends AbstractTest {
                 .queryParam("d", "123").build().toString());
 
         assertEquals(404, responseContext.getStatus());
+    }
+
+    @Test
+    public void testCustomEnumResource() throws ExecutionException, InterruptedException {
+        initiateWebApplication(BadEnumResource.class, EnumParamConverterProvider.class);
+        final ContainerResponse responseContext = getResponseContext(UriBuilder.fromPath("/")
+                .queryParam("d", "A").build().toString());
+        assertEquals(1, counter.get());
+        assertEquals(200, responseContext.getStatus());
     }
 
     public static class URIStringReaderProvider implements ParamConverterProvider {
@@ -182,6 +197,40 @@ public class ParamConverterInternalTest extends AbstractTest {
                 }
             };
 
+        }
+    }
+
+    static final AtomicInteger counter = new AtomicInteger(0);
+    @Singleton
+    @Priority(1)
+    public static class EnumParamConverterProvider implements ParamConverterProvider {
+
+        @Override
+        public <T> ParamConverter<T> getConverter(Class<T> rawType, Type genericType, Annotation[] annotations) {
+            if (Enum.class.isAssignableFrom(rawType)) {
+                return new ParamConverter<T>() {
+                    @Override
+                    public T fromString(final String value) {
+                        counter.addAndGet(1);
+                        if (value == null) {
+                            return null;
+                        }
+                        Class<? extends Enum> enumClass = null;
+                        try {
+                            enumClass = (Class<Enum>) Class.forName(genericType.getTypeName());
+                        } catch (ClassNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                        return (T) Enum.valueOf(enumClass, value.toUpperCase());
+                    }
+
+                    @Override
+                    public String toString(final T value) {
+                        return String.valueOf(value);
+                    }
+                };
+            }
+            return null;
         }
     }
 
@@ -284,11 +333,12 @@ public class ParamConverterInternalTest extends AbstractTest {
     @Test
     public void testDateParamConverterIsChosenForDateString() {
         initiateWebApplication();
+        final Configuration configuration = new CommonConfig(null, ComponentBag.EXCLUDE_EMPTY);
         final ParamConverter<Date> converter =
-                new ParamConverters.AggregatedProvider(null).getConverter(Date.class, Date.class, null);
+                new ParamConverters.AggregatedProvider(null, configuration).getConverter(Date.class, Date.class, null);
 
-        assertEquals("Unexpected date converter provider class",
-                ParamConverters.DateProvider.class, converter.getClass().getEnclosingClass());
+        assertEquals(ParamConverters.DateProvider.class, converter.getClass().getEnclosingClass(),
+                "Unexpected date converter provider class");
     }
 
     @Path("resource")

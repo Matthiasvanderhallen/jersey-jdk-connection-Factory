@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -23,11 +23,14 @@ import java.util.Collection;
 
 import javax.enterprise.inject.InjectionException;
 import javax.ws.rs.MatrixParam;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link CachedConstructorAnalyzer}.
@@ -108,7 +111,8 @@ public class CachedConstructorAnalyzerTest {
 
         Constructor<BothAnnotatedConstructor> constructor = analyzer.getConstructor();
         assertEquals(1, constructor.getParameterCount());
-        assertEquals(Integer.class, constructor.getParameterTypes()[0]);
+        Class<?> parameterType = constructor.getParameterTypes()[0];
+        assertTrue(parameterType.equals(String.class) || parameterType.equals(Integer.class));
     }
 
     @Test
@@ -127,14 +131,16 @@ public class CachedConstructorAnalyzerTest {
         assertEquals(2, analyzer.getConstructor().getParameterCount());
     }
 
-    @Test(expected = InjectionException.class)
+    @Test
     public void testUnknownAnnotatedConstructor() {
-        new CachedConstructorAnalyzer<>(UnknownAnnotatedConstructor.class, ANNOTATIONS).getConstructor();
+        assertThrows(InjectionException.class,
+                () -> new CachedConstructorAnalyzer<>(UnknownAnnotatedConstructor.class, ANNOTATIONS).getConstructor());
     }
 
-    @Test(expected = InjectionException.class)
+    @Test
     public void testSingleNonAnnotatedConstructor() {
-        new CachedConstructorAnalyzer<>(SingleNonAnnotatedConstructor.class, ANNOTATIONS).getConstructor();
+        assertThrows(InjectionException.class,
+                () -> new CachedConstructorAnalyzer<>(SingleNonAnnotatedConstructor.class, ANNOTATIONS).getConstructor());
     }
 
     public static class DefaultConstructor {

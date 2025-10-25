@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -18,9 +18,8 @@ package org.glassfish.jersey.tests.e2e.server;
 
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
-import org.glassfish.jersey.server.ServerRuntime;
 import org.glassfish.jersey.test.JerseyTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -50,9 +49,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Pavel Bucek
@@ -160,7 +159,15 @@ public class CompletionStageTest extends JerseyTest {
 
     @Test
     public void testCompletionStageUnwrappedInGenericType() {
-        try (Response r = target("cs/databeanlist").request().get()){
+        try (Response r = target("cs/databeanlist").request().get()) {
+            assertEquals(200, r.getStatus());
+            assertTrue(r.readEntity(String.class).startsWith(ENTITY));
+        }
+    }
+
+    @Test
+    void testExtends() {
+        try (Response r = target("cs/csextends").request().get()) {
             assertEquals(200, r.getStatus());
             assertTrue(r.readEntity(String.class).startsWith(ENTITY));
         }
@@ -289,6 +296,12 @@ public class CompletionStageTest extends JerseyTest {
             delaySubmit(() -> cf.complete(ENTITY));
 
             return cs;
+        }
+
+        @GET
+        @Path("csextends")
+        public CompletionStage<? extends CharSequence> csExtends() {
+            return CompletableFuture.completedFuture(ENTITY);
         }
 
         private void delaySubmit(Runnable runnable) {

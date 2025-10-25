@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (c) 2010, 2022 Oracle and/or its affiliates. All rights reserved.
+    Copyright (c) 2010, 2025 Oracle and/or its affiliates. All rights reserved.
 
     This program and the accompanying materials are made available under the
     terms of the Eclipse Public License v. 2.0, which is available at
@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.glassfish.jersey</groupId>
         <artifactId>project</artifactId>
-        <version>2.38-SNAPSHOT</version>
+        <version>2.48-SNAPSHOT</version>
     </parent>
 
     <groupId>org.glassfish.jersey.core</groupId>
@@ -81,6 +81,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler.common.mvn.plugin.version}</version>
                 <inherited>false</inherited>
                 <configuration>
                     <source>${java.version}</source>
@@ -172,6 +173,29 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/ByteBufferInputStreamTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>tests-with-additional-permissions</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>-Djava.security.policy=${project.build.directory}/test-classes/surefire-jdk17.policy</argLine>
+                            <includes>
+                                <include>**/ByteBufferInputStreamTest.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
                 <configuration>
                     <!-- Execute test classes in parallel - 1 thread per CPU core. -->
                     <parallel>classesAndMethods</parallel>
@@ -206,8 +230,8 @@
         </dependency>
 
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -286,7 +310,7 @@
                                 </goals>
                             </execution>
                             <execution>
-                                <!-- Compile these files with jdk 8 and put them aside to be included in multirelase jar -->
+                                <!-- Compile these files with jdk 8 and put them aside to be included in multi-release jar -->
                                 <!-- Multi-release jar is built by jdk 11+, but these classes are buildable by jdk 8 only -->
                                 <id>compile-2-java8</id>
                                 <phase>process-resources</phase>
@@ -389,6 +413,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
+                        <version>${compiler.common.mvn.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>default-compile</id>
@@ -472,10 +497,10 @@
                                     <goal>copy-resources</goal>
                                 </goals>
                                 <configuration>
-                                    <outputDirectory>${project.build.directory}/generated-sources/rsrc-gen/META-INF/versions/11/org/glassfish/jersey/internal/jsr166</outputDirectory>
+                                    <outputDirectory>${project.build.directory}/generated-sources/rsrc-gen/META-INF/versions/11/org/glassfish/jersey</outputDirectory>
                                     <resources>
                                         <resource>
-                                            <directory>${java11.sourceDirectory}/org/glassfish/jersey/internal/jsr166</directory>
+                                            <directory>${java11.sourceDirectory}/org/glassfish/jersey</directory>
                                         </resource>
                                     </resources>
                                 </configuration>
@@ -651,7 +676,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.0.1</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
@@ -670,9 +694,163 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>build.jdk20-</id>
+            <activation>
+                <jdk>[1.8,21)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>add.java20-</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/main/java20-</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>build.jdk21</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>add.java20-</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/main/java21</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default-compile</id>
+                                <configuration>
+                                    <!-- compile everything to ensure module-info contains right entries -->
+                                    <release>21</release>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <echo>Building for JDK 21+</echo>
+                                    </target>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>compile-java21</id>
+                                <phase>process-resources</phase>
+                                <configuration>
+                                    <target>
+                                        <mkdir dir="${java21.build.outputDirectory}" />
+                                        <javac srcdir="${java21.sourceDirectory}${path.separator}${project.basedir}/src/main/java/org/glassfish/jersey/innate/virtual" destdir="${java21.build.outputDirectory}"
+                                               classpath="${project.build.outputDirectory}" includeantruntime="false" release="21"/>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>copyJDK21FilesToMultiReleaseJar</id>
+            <activation>
+                <file>
+                    <!-- ${java21.build.outputDirectory} does not work here -->
+                    <exists>target/classes-java21/org/glassfish/jersey/innate/VirtualThreadSupport.class</exists>
+                </file>
+                <jdk>[1.8,21)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <inherited>true</inherited>
+                        <executions>
+                            <execution>
+                                <id>copy-jdk21-sources</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/generated-sources/rsrc-gen/META-INF/versions/21/org/glassfish/jersey/innate</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${java21.sourceDirectory}/org/glassfish/jersey/innate</directory>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-jdk21-classes-to-meta-inf</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.outputDirectory}/META-INF/versions/21</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${java21.build.outputDirectory}</directory>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
         <profile>
             <id>securityOff</id>
+            <activation>
+                <jdk>[24,)</jdk>
+            </activation>
             <properties>
                <surefire.security.argline />
             </properties>
@@ -681,12 +859,17 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <excludes>
-                                <exclude>**/SecurityManagerConfiguredTest.java</exclude>
-                                <exclude>**/ReflectionHelperTest.java</exclude>
-                            </excludes>
-                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>default-test</id>
+                                <configuration>
+                                    <excludes>
+                                        <exclude>**/SecurityManagerConfiguredTest.java</exclude>
+                                        <exclude>**/ReflectionHelperTest.java</exclude>
+                                    </excludes>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
@@ -716,6 +899,8 @@
         <java8.sourceDirectory>${project.basedir}/src/main/java8</java8.sourceDirectory>
         <java11.build.outputDirectory>${project.build.directory}/classes-java11</java11.build.outputDirectory>
         <java11.sourceDirectory>${project.basedir}/src/main/java11</java11.sourceDirectory>
+        <java21.build.outputDirectory>${project.build.directory}/classes-java21</java21.build.outputDirectory>
+        <java21.sourceDirectory>${project.basedir}/src/main/java21</java21.sourceDirectory>
     </properties>
 
 </project>

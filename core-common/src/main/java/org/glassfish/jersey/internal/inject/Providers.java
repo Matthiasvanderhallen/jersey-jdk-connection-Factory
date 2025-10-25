@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2025 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -42,7 +42,10 @@ import javax.ws.rs.core.Feature;
 
 import javax.annotation.Priority;
 
+import org.glassfish.jersey.JerseyPriorities;
+import org.glassfish.jersey.innate.inject.spi.ExternalRegistrables;
 import org.glassfish.jersey.internal.LocalizationMessages;
+import org.glassfish.jersey.internal.ServiceFinder;
 import org.glassfish.jersey.model.ContractProvider;
 import org.glassfish.jersey.model.internal.RankedComparator;
 import org.glassfish.jersey.model.internal.RankedProvider;
@@ -102,6 +105,15 @@ public final class Providers {
         interfaces.putAll(JAX_RS_PROVIDER_INTERFACE_WHITELIST);
         interfaces.put(javax.ws.rs.core.Feature.class, ProviderRuntime.BOTH);
         interfaces.put(Binder.class, ProviderRuntime.BOTH);
+
+        try {
+            ServiceFinder<ExternalRegistrables> registerables =
+                    ServiceFinder.service(ExternalRegistrables.class).ignoreNotFound(true).find();
+            registerables.forEach(regs -> regs.registrableContracts()
+                    .forEach(pair -> interfaces.put(pair.getContract(), ProviderRuntime.fromRuntimeType(pair.getRuntimeType()))));
+        } catch (Throwable t) {
+            LOGGER.warning(LocalizationMessages.ERROR_EXTERNAL_REGISTERABLES_IGNORED(t.getMessage()));
+        }
         return interfaces;
     }
 
@@ -117,6 +129,10 @@ public final class Providers {
 
         public RuntimeType getRuntime() {
             return runtime;
+        }
+
+        private static ProviderRuntime fromRuntimeType(RuntimeType type) {
+            return type == null ? BOTH : (type == RuntimeType.SERVER ? SERVER : CLIENT);
         }
     }
 
@@ -357,13 +373,7 @@ public final class Providers {
     }
 
     private static int getPriority(Class<?> serviceClass) {
-        Priority annotation = serviceClass.getAnnotation(Priority.class);
-        if (annotation != null) {
-            return annotation.value();
-        }
-
-        // default priority
-        return Priorities.USER;
+        return JerseyPriorities.getPriorityValue(serviceClass, /* default priority */ Priorities.USER);
     }
 
     private static <T> Class<T> getImplementationClass(Class<T> contract, ServiceHolder<T> serviceHolder) {

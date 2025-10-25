@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2022 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2025 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -37,6 +37,7 @@ import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.internal.JerseyRequestTimeoutHandler;
 import org.glassfish.jersey.server.spi.ContainerResponseWriter;
+import org.glassfish.jersey.servlet.ServletContainer;
 import org.glassfish.jersey.servlet.spi.AsyncContextDelegate;
 
 /**
@@ -115,6 +116,10 @@ public class ResponseWriter implements ContainerResponseWriter {
     @Override
     public OutputStream writeResponseStatusAndHeaders(final long contentLength, final ContainerResponse responseContext)
             throws ContainerException {
+        if (asyncExt.isCompleted()) {
+            return null;
+        }
+
         this.responseContext.complete(responseContext);
 
         // first set the content length, so that if headers have an explicit value, it takes precedence over this one
@@ -125,7 +130,7 @@ public class ResponseWriter implements ContainerResponseWriter {
         // the invocation of sendError as on some Servlet implementations
         // modification of the response headers will have no effect
         // after the invocation of sendError.
-        final MultivaluedMap<String, String> headers = getResponseContext().getStringHeaders();
+        final MultivaluedMap<String, String> headers = responseContext.getStringHeaders();
         for (final Map.Entry<String, List<String>> e : headers.entrySet()) {
             final Iterator<String> it = e.getValue().iterator();
             if (!it.hasNext()) {
@@ -144,7 +149,7 @@ public class ResponseWriter implements ContainerResponseWriter {
 
         final String reasonPhrase = responseContext.getStatusInfo().getReasonPhrase();
         if (reasonPhrase != null) {
-            response.setStatus(responseContext.getStatus(), reasonPhrase);
+            ServletContainer.setStatus(response, responseContext.getStatus(), reasonPhrase);
         } else {
             response.setStatus(responseContext.getStatus());
         }
@@ -214,12 +219,12 @@ public class ResponseWriter implements ContainerResponseWriter {
         try {
             if (!response.isCommitted()) {
                 try {
+                    final int statusCode = Response.Status.INTERNAL_SERVER_ERROR.getStatusCode();
                     if (configSetStatusOverSendError) {
                         response.reset();
-                        //noinspection deprecation
-                        response.setStatus(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "Request failed.");
+                        ServletContainer.setStatus(response, statusCode, "Request failed.");
                     } else {
-                        response.sendError(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "Request failed.");
+                        response.sendError(statusCode, "Request failed.");
                     }
                 } catch (final IllegalStateException ex) {
                     // a race condition externally committing the response can still occur...

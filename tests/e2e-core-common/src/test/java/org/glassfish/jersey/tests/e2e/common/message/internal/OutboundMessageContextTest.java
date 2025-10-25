@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -16,10 +16,14 @@
 
 package org.glassfish.jersey.tests.e2e.common.message.internal;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -32,19 +36,23 @@ import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.RuntimeDelegate;
 
+import org.glassfish.jersey.io.spi.FlushedCloseable;
 import org.glassfish.jersey.message.internal.CookieProvider;
 import org.glassfish.jersey.message.internal.OutboundMessageContext;
 import org.glassfish.jersey.tests.e2e.common.TestRuntimeDelegate;
 
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * {@link OutboundMessageContext} test.
@@ -225,4 +233,82 @@ public class OutboundMessageContextTest {
 
         fail();
     }
+
+    @Test
+    public void testChangedContentType() {
+        OutboundMessageContext ctx = new OutboundMessageContext((Configuration) null);
+        ctx.setMediaType(MediaType.APPLICATION_XML_TYPE);
+        Assertions.assertEquals(MediaType.APPLICATION_XML_TYPE, ctx.getMediaType());
+        ctx.setMediaType(MediaType.APPLICATION_JSON_TYPE);
+        Assertions.assertEquals(MediaType.APPLICATION_JSON_TYPE, ctx.getMediaType());
+    }
+
+    @Test
+    public void testChangedContentTypeOnList() {
+        OutboundMessageContext ctx = new OutboundMessageContext((Configuration) null);
+        ctx.setMediaType(MediaType.APPLICATION_XML_TYPE);
+        Assertions.assertEquals(MediaType.APPLICATION_XML_TYPE, ctx.getMediaType());
+        ctx.getHeaders().get(HttpHeaders.CONTENT_TYPE).set(0, MediaType.APPLICATION_JSON);
+        Assertions.assertEquals(MediaType.APPLICATION_JSON_TYPE, ctx.getMediaType());
+    }
+
+    @Test
+    public void testChangedContentTypeOnValues() {
+        OutboundMessageContext ctx = new OutboundMessageContext((Configuration) null);
+        ctx.setMediaType(MediaType.APPLICATION_XML_TYPE);
+        Assertions.assertEquals(MediaType.APPLICATION_XML_TYPE, ctx.getMediaType());
+        ctx.getHeaders().values().clear();
+        Assertions.assertEquals(null, ctx.getMediaType());
+    }
+
+    @Test
+    public void testChangedContentTypeOnEntrySet() {
+        OutboundMessageContext ctx = new OutboundMessageContext((Configuration) null);
+        ctx.setMediaType(MediaType.APPLICATION_XML_TYPE);
+        Assertions.assertEquals(MediaType.APPLICATION_XML_TYPE, ctx.getMediaType());
+        ctx.getHeaders().entrySet().clear();
+        Assertions.assertEquals(null, ctx.getMediaType());
+    }
+
+    @Test
+    public void testCopyConstructor() {
+        OutboundMessageContext ctx = new OutboundMessageContext((Configuration) null);
+        OutboundMessageContext newCtx = new OutboundMessageContext(ctx);
+        newCtx.setMediaType(MediaType.APPLICATION_XML_TYPE); // new value
+        Assertions.assertEquals(MediaType.APPLICATION_XML_TYPE, newCtx.getMediaType());
+    }
+
+    @Test
+    public void OutboundMessageContextFlushTest() throws IOException {
+        FlushCountOutputStream os = new FlushCountOutputStream();
+        OutboundMessageContext ctx = new OutboundMessageContext((Configuration) null);
+        ctx.setEntity("Anything");
+        ctx.setEntityStream(os);
+        os.flush();
+        ctx.close();
+        MatcherAssert.assertThat(os.flushedCnt, Matchers.is(2));
+
+        os = new FlushedClosableOutputStream();
+        ctx = new OutboundMessageContext((Configuration) null);
+        ctx.setEntity("Anything2");
+        ctx.setEntityStream(os);
+        os.flush();
+        ctx.close();
+        MatcherAssert.assertThat(os.flushedCnt, Matchers.is(1));
+    }
+
+    private static class FlushCountOutputStream extends ByteArrayOutputStream {
+        private int flushedCnt = 0;
+
+        @Override
+        public void flush() throws IOException {
+            flushedCnt++;
+            super.flush();
+        }
+    }
+
+    private static class FlushedClosableOutputStream extends FlushCountOutputStream implements FlushedCloseable {
+
+    }
 }
+

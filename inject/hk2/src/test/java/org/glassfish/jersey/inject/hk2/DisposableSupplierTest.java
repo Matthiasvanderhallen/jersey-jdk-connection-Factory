@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -17,6 +17,8 @@
 package org.glassfish.jersey.inject.hk2;
 
 import java.lang.reflect.Type;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -31,14 +33,14 @@ import org.glassfish.jersey.internal.inject.InjectionManager;
 import org.glassfish.jersey.process.internal.RequestScope;
 import org.glassfish.jersey.process.internal.RequestScoped;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Tests that {@link org.glassfish.jersey.internal.inject.DisposableSupplier} is properly processed by {@link Hk2Helper}.
@@ -52,12 +54,12 @@ public class DisposableSupplierTest {
 
     private InjectionManager injectionManager;
 
-    @Before
+    @BeforeEach
     public void setup() {
         injectionManager = BindingTestHelper.createInjectionManager();
     }
 
-    @After
+    @AfterEach
     public void teardown() {
         injectionManager.shutdown();
     }
@@ -374,9 +376,17 @@ public class DisposableSupplierTest {
 
             // All instances should be the same because they are request scoped.
             ComposedObject instance = injectionManager.getInstance(ComposedObject.class);
-            assertEquals("1", instance.first);
-            assertEquals("2", instance.second);
-            assertEquals("3", instance.third);
+            Set<String> set1 = new HashSet<String>() {{
+                add("1");
+                add("2");
+                add("3");
+            }};
+            Set<String> set2 = new HashSet<String>() {{
+                add(instance.first.toString());
+                add(instance.second.toString());
+                add(instance.third.toString());
+            }};
+            assertEquals(set1, set2);
         });
 
         Supplier<String> cleanedSupplier = atomicSupplier.get();

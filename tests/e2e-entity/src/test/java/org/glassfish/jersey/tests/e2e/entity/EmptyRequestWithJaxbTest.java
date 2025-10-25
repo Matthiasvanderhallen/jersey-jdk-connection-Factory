@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2018 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2025 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -39,22 +39,29 @@ import org.glassfish.jersey.jettison.JettisonJaxbContext;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Paul Sandoz
  * @author Martin Matula
  */
-@RunWith(Enclosed.class)
+@Suite
+@SelectClasses({
+        EmptyRequestWithJaxbTest.EmptyRequestTest.class,
+        EmptyRequestWithJaxbTest.BadgerFishCRTest.class,
+        EmptyRequestWithJaxbTest.MappedJettisonCRTest.class
+})
 public class EmptyRequestWithJaxbTest {
 
     @SuppressWarnings("UnusedParameters")
     @Path("/")
-    @Ignore("This class is not a test class & must be ignored by the Enclosed test runner.")
+    @Disabled("This class is not a test class & must be ignored by the Enclosed test runner.")
     public static class Resource {
 
         @POST
@@ -88,7 +95,8 @@ public class EmptyRequestWithJaxbTest {
 
     }
 
-    public static class EmptyRequestTest extends JerseyTest {
+    @Nested
+    class EmptyRequestTest extends JerseyTest {
 
         @Override
         protected Application configure() {
@@ -129,7 +137,7 @@ public class EmptyRequestWithJaxbTest {
         }
     }
 
-    @Ignore("This class is not a test class & must be ignored by the Enclosed test runner.")
+    @Disabled("This class is not a test class & must be ignored by the Enclosed test runner.")
     public abstract static class CR implements ContextResolver<JAXBContext> {
 
         private final JAXBContext context;
@@ -153,7 +161,8 @@ public class EmptyRequestWithJaxbTest {
         }
     }
 
-    public static class MappedJettisonCRTest extends JerseyTest {
+    @Nested
+    class MappedJettisonCRTest extends JerseyTest {
 
         @Override
         protected Application configure() {
@@ -165,7 +174,7 @@ public class EmptyRequestWithJaxbTest {
             config.register(JettisonFeature.class);
         }
 
-        public static class MappedJettisonCR extends CR {
+        class MappedJettisonCR extends CR {
 
             protected JAXBContext configure(Class[] classes) throws JAXBException {
                 return new JettisonJaxbContext(JettisonConfig.mappedJettison().build(), classes);
@@ -178,7 +187,8 @@ public class EmptyRequestWithJaxbTest {
         }
     }
 
-    public static class BadgerFishCRTest extends JerseyTest {
+    @Nested
+    class BadgerFishCRTest extends JerseyTest {
 
         @Override
         protected Application configure() {
@@ -190,7 +200,7 @@ public class EmptyRequestWithJaxbTest {
             config.register(JettisonFeature.class);
         }
 
-        public static class BadgerFishCR extends CR {
+        class BadgerFishCR extends CR {
 
             protected JAXBContext configure(Class[] classes) throws JAXBException {
                 return new JettisonJaxbContext(JettisonConfig.badgerFish().build(), classes);
